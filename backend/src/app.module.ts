@@ -15,6 +15,7 @@ import { PermissoesModule } from './modules/permissoes/permissoes.module';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     RelatoriosModule,
     PermissoesModule,
     AuditoriaModule,
+    HealthModule,
   ],
   providers: [
     {

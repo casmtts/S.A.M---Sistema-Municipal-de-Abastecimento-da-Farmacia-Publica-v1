@@ -130,6 +130,7 @@ O frontend usa `VITE_API_URL` para localizar a API. Por padrão, ele aponta para
 
 ## Endpoints principais
 
+- `GET /health/check` — verificação pública da API e da conexão com o PostgreSQL.
 - `POST /auth/login` — autenticação JWT.
 - `POST /auth/register` — solicitação pública de cadastro.
 - `GET /medicamentos` e `PATCH /medicamentos/:id/estoque` — estoque e movimentações.

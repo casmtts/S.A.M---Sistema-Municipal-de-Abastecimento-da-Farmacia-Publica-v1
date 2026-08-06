@@ -84,6 +84,7 @@ As migrations versionadas estão em `prisma/migrations`. Em produção, use `mig
 
 | Método | Endpoint | Acesso |
 | --- | --- | --- |
+| `GET` | `/health/check` | Público |
 | `POST` | `/auth/login` | Público |
 | `POST` | `/auth/register` | Público |
 | `GET` | `/medicamentos` | JWT |
