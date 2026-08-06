@@ -15,11 +15,23 @@ Aplicação web de gestão de medicamentos para redes públicas de saúde. O fro
 
 | Serviço | Execução | Endereço |
 | --- | --- | --- |
-| PostgreSQL | Docker Compose | rede interna `db:5432` |
+| PostgreSQL | Docker Compose | `localhost:5433` no host e `db:5432` na rede interna |
 | Backend NestJS | Docker Compose | `http://localhost:3001` |
 | Frontend React/Vite | processo local | `http://localhost:3000` |
 
-O PostgreSQL do Compose usa o volume `sam-postgres-data` e não publica a porta 5432 no host. Assim, ele não conflita com uma instalação local do PostgreSQL.
+O PostgreSQL do Compose usa o volume `sam-postgres-data`. A porta externa padrão é `5433`, mantendo a porta interna `5432` e evitando conflito com uma instalação local do PostgreSQL. Para alterar a porta externa, defina `POSTGRES_HOST_PORT` no `.env`.
+
+### Conectar pelo DBeaver
+
+Com os containers em execução (`docker compose up -d`), crie uma conexão PostgreSQL no DBeaver com:
+
+- Host: `localhost`
+- Porta: `5433`
+- Banco: valor de `POSTGRES_DB` (padrão: `farmacia_municipal`)
+- Usuário: valor de `POSTGRES_USER` (padrão: `sam`)
+- Senha: valor de `POSTGRES_PASSWORD` (padrão: `sam_docker_password`)
+
+Se a porta `5433` já estiver ocupada, defina `POSTGRES_HOST_PORT=55432` no `.env`, recrie os serviços e use essa porta no DBeaver.
 
 ## Pré-requisitos
 
