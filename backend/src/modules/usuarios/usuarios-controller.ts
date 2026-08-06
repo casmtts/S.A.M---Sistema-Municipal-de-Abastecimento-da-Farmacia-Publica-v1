@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UsuariosService } from './usuarios-service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
@@ -15,9 +16,11 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @Controller('usuarios')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Permissions('usuarios.visualizar')
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
@@ -35,25 +38,29 @@ export class UsuariosController {
 
   @Post()
   @Roles(UserRole.ADMIN)
-  create(@Body() createUsuarioDto: CreateUsuarioDto) {
-    return this.usuariosService.create(createUsuarioDto);
+  @Permissions('usuarios.criar')
+  create(@Body() createUsuarioDto: CreateUsuarioDto, @Request() req: any) {
+    return this.usuariosService.create(createUsuarioDto, req.user.id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto) {
-    return this.usuariosService.update(id, updateUsuarioDto);
+  @Permissions('usuarios.editar')
+  update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto, @Request() req: any) {
+    return this.usuariosService.update(id, updateUsuarioDto, req.user.id);
   }
 
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
-  toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean) {
-    return this.usuariosService.toggleStatus(id, ativo);
+  @Permissions('usuarios.aprovar')
+  toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean, @Request() req: any) {
+    return this.usuariosService.toggleStatus(id, ativo, req.user.id);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.usuariosService.remove(id);
+  @Permissions('usuarios.excluir')
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.usuariosService.remove(id, req.user.id);
   }
 }

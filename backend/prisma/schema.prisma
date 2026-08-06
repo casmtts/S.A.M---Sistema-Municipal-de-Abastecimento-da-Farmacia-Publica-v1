@@ -13,6 +13,7 @@ datasource db {
 // ==================== ENUMS ====================
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   GESTOR
   FARMACEUTICO
@@ -46,151 +47,215 @@ enum TipoUnidade {
 // ==================== MODELS ====================
 
 model Usuario {
-  id              String          @id @default(uuid())
-  nome            String
-  email           String          @unique
-  cpf             String          @unique
-  senha           String
-  role            UserRole        @default(ATENDENTE)
-  ativo           Boolean         @default(true)
-  telefone        String?
-  cargo           String?
-  unidadeId       String?
-  ultimoAcesso    DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id           String    @id @default(uuid())
+  nome         String
+  email        String    @unique
+  cpf          String    @unique
+  senha        String
+  role         UserRole  @default(ATENDENTE)
+  ativo        Boolean   @default(true)
+  telefone     String?
+  cargo        String?
+  unidadeId    String?
+  ultimoAcesso DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relações
-  movimentacoes        Movimentacao[]
-  pedidosSolicitados   Pedido[]     @relation("PedidoSolicitante")
-  pedidosAprovados     Pedido[]     @relation("PedidoAprovador")
+  movimentacoes      Movimentacao[]
+  pedidosSolicitados Pedido[]           @relation("PedidoSolicitante")
+  pedidosAprovados   Pedido[]           @relation("PedidoAprovador")
+  permissoes         PermissaoUsuario[]
+  logsAuditoria      LogAuditoria[]
 
   @@map("usuarios")
 }
 
+model Permissao {
+  id       String             @id @default(uuid())
+  chave    String             @unique
+  modulo   String
+  acao     String
+  nome     String
+  ativo    Boolean            @default(true)
+  papeis   PermissaoPapel[]
+  usuarios PermissaoUsuario[]
+
+  @@index([modulo])
+  @@map("permissoes")
+}
+
+model PermissaoPapel {
+  permissaoId String
+  role        UserRole
+  permitido   Boolean   @default(true)
+  permissao   Permissao @relation(fields: [permissaoId], references: [id], onDelete: Cascade)
+
+  @@id([permissaoId, role])
+  @@index([role])
+  @@map("permissoes_papeis")
+}
+
+model PermissaoUsuario {
+  usuarioId   String
+  permissaoId String
+  permitido   Boolean
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  permissao   Permissao @relation(fields: [permissaoId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, permissaoId])
+  @@index([permissaoId])
+  @@map("permissoes_usuarios")
+}
+
+model LogAuditoria {
+  id           String   @id @default(uuid())
+  usuarioId    String?
+  usuarioNome  String?
+  usuarioEmail String?
+  acao         String
+  modulo       String
+  recurso      String?
+  recursoId    String?
+  descricao    String
+  dadosAntes   Json?
+  dadosDepois  Json?
+  ip           String?
+  userAgent    String?
+  sucesso      Boolean  @default(true)
+  erro         String?
+  createdAt    DateTime @default(now())
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId, createdAt])
+  @@index([acao, createdAt])
+  @@index([modulo, createdAt])
+  @@map("logs_auditoria")
+}
+
 model Medicamento {
-  id                String          @id @default(uuid())
+  id                String   @id @default(uuid())
   nome              String
   principioAtivo    String
   concentracao      String?
   formaFarmaceutica String?
-  codigoBarras      String?         @unique
+  codigoBarras      String?  @unique
   lote              String?
   validade          DateTime
-  quantidadeAtual   Int             @default(0)
-  quantidadeMinima  Int             @default(0)
-  quantidadeMaxima  Int             @default(1000)
-  precoUnitario     Float           @default(0)
+  quantidadeAtual   Int      @default(0)
+  quantidadeMinima  Int      @default(0)
+  quantidadeMaxima  Int      @default(1000)
+  precoUnitario     Float    @default(0)
   fornecedorId      String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relações
-  fornecedor      Fornecedor?     @relation(fields: [fornecedorId], references: [id])
-  movimentacoes   Movimentacao[]
-  pedidos         Pedido[]
+  fornecedor    Fornecedor?    @relation(fields: [fornecedorId], references: [id])
+  movimentacoes Movimentacao[]
+  pedidos       Pedido[]
 
   @@map("medicamentos")
 }
 
 model Fornecedor {
-  id                String          @id @default(uuid())
-  nome              String
-  razaoSocial       String?
-  cnpj              String          @unique
-  inscricaoEstadual String?
-  endereco          String?
-  numero            String?
-  complemento       String?
-  bairro            String?
-  cidade            String?
-  uf                String?
-  cep               String?
-  telefone          String?
-  email             String?
-  contato           String?
-  prazoEntrega      Int             @default(7)
+  id                 String   @id @default(uuid())
+  nome               String
+  razaoSocial        String?
+  cnpj               String   @unique
+  inscricaoEstadual  String?
+  endereco           String?
+  numero             String?
+  complemento        String?
+  bairro             String?
+  cidade             String?
+  uf                 String?
+  cep                String?
+  telefone           String?
+  email              String?
+  contato            String?
+  prazoEntrega       Int      @default(7)
   condicoesPagamento String?
-  ativo             Boolean         @default(true)
-  observacoes       String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  ativo              Boolean  @default(true)
+  observacoes        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Relações
-  medicamentos      Medicamento[]
+  medicamentos Medicamento[]
 
   @@map("fornecedores")
 }
 
 model UnidadeSaude {
-  id                  String          @id @default(uuid())
-  nome                String
-  tipo                TipoUnidade
-  codigo              String          @unique
-  endereco            String?
-  numero              String?
-  complemento         String?
-  bairro              String?
-  cidade              String?
-  uf                  String?
-  cep                 String?
-  telefone            String?
-  email               String?
-  responsavel         String?
+  id                   String      @id @default(uuid())
+  nome                 String
+  tipo                 TipoUnidade
+  codigo               String      @unique
+  endereco             String?
+  numero               String?
+  complemento          String?
+  bairro               String?
+  cidade               String?
+  uf                   String?
+  cep                  String?
+  telefone             String?
+  email                String?
+  responsavel          String?
   horarioFuncionamento String?
-  ativo               Boolean         @default(true)
-  observacoes         String?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  ativo                Boolean     @default(true)
+  observacoes          String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
   @@map("unidades_saude")
 }
 
 model Pedido {
-  id                   String          @id @default(uuid())
+  id                   String       @id @default(uuid())
   medicamentoId        String
   medicamentoNome      String
   quantidadeSolicitada Int
-  quantidadeEntregue   Int             @default(0)
-  dataSolicitacao      DateTime        @default(now())
+  quantidadeEntregue   Int          @default(0)
+  dataSolicitacao      DateTime     @default(now())
   dataPrevistaEntrega  DateTime
   dataEntregaReal      DateTime?
-  status               StatusPedido    @default(PENDENTE)
+  status               StatusPedido @default(PENDENTE)
   valorUnitario        Float
   valorTotal           Float
   justificativa        String?
   solicitanteId        String
   aprovadorId          String?
   observacoes          String?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   // Relações
-  medicamento   Medicamento     @relation(fields: [medicamentoId], references: [id])
-  solicitante   Usuario         @relation("PedidoSolicitante", fields: [solicitanteId], references: [id])
-  aprovador     Usuario?        @relation("PedidoAprovador", fields: [aprovadorId], references: [id])
+  medicamento Medicamento @relation(fields: [medicamentoId], references: [id])
+  solicitante Usuario     @relation("PedidoSolicitante", fields: [solicitanteId], references: [id])
+  aprovador   Usuario?    @relation("PedidoAprovador", fields: [aprovadorId], references: [id])
 
   @@map("pedidos")
 }
 
 model Movimentacao {
-  id                  String          @id @default(uuid())
+  id                  String           @id @default(uuid())
   medicamentoId       String
   medicamentoNome     String
   tipo                TipoMovimentacao
   quantidade          Int
-  data                DateTime        @default(now())
+  data                DateTime         @default(now())
   responsavelId       String
   responsavelNome     String
   documentoReferencia String?
   observacao          String?
   unidadeOrigemId     String?
   unidadeDestinoId    String?
-  createdAt           DateTime        @default(now())
+  createdAt           DateTime         @default(now())
 
   // Relações
-  medicamento   Medicamento     @relation(fields: [medicamentoId], references: [id])
-  responsavel   Usuario         @relation(fields: [responsavelId], references: [id])
+  medicamento Medicamento @relation(fields: [medicamentoId], references: [id])
+  responsavel Usuario     @relation(fields: [responsavelId], references: [id])
 
   @@map("movimentacoes")
 }

@@ -5,9 +5,11 @@ import { RelatorioOptionsDto } from './dto/relatorio-options.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @Controller('relatorios')
 @UseGuards(RolesGuard)
+@Permissions('relatorios.exportar')
 export class RelatoriosController {
   constructor(private readonly relatoriosService: RelatoriosService) {}
 

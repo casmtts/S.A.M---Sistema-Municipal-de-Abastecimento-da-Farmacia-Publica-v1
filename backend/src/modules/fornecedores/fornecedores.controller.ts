@@ -14,9 +14,11 @@ import { UpdateFornecedorDto } from './dto/update-fornecedor.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @Controller('fornecedores')
 @UseGuards(RolesGuard)
+@Permissions('fornecedores.visualizar')
 export class FornecedoresController {
   constructor(private readonly fornecedoresService: FornecedoresService) {}
 
@@ -65,6 +67,7 @@ export class FornecedoresController {
    */
   @Post()
   @Roles(UserRole.ADMIN)
+  @Permissions('fornecedores.criar')
   create(@Body() createFornecedorDto: CreateFornecedorDto) {
     return this.fornecedoresService.create(createFornecedorDto);
   }
@@ -74,6 +77,7 @@ export class FornecedoresController {
    */
   @Patch(':id')
   @Roles(UserRole.ADMIN)
+  @Permissions('fornecedores.editar')
   update(
     @Param('id') id: string,
     @Body() updateFornecedorDto: UpdateFornecedorDto,
@@ -86,6 +90,7 @@ export class FornecedoresController {
    */
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
+  @Permissions('fornecedores.editar')
   toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean) {
     return this.fornecedoresService.toggleStatus(id, ativo);
   }
@@ -95,6 +100,7 @@ export class FornecedoresController {
    */
   @Delete(':id')
   @Roles(UserRole.ADMIN)
+  @Permissions('fornecedores.excluir')
   remove(@Param('id') id: string) {
     return this.fornecedoresService.remove(id);
   }

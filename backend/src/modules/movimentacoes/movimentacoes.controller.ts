@@ -14,9 +14,11 @@ import { CreateMovimentacaoDto } from './dto/create-movimentacoes.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @Controller('movimentacoes')
 @UseGuards(RolesGuard)
+@Permissions('estoque.visualizar')
 export class MovimentacoesController {
   constructor(private readonly movimentacoesService: MovimentacoesService) {}
 
@@ -74,6 +76,7 @@ export class MovimentacoesController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
+  @Permissions('estoque.movimentar')
   create(@Body() createMovimentacaoDto: CreateMovimentacaoDto, @Request() req) {
     return this.movimentacoesService.create(
       createMovimentacaoDto,
@@ -84,6 +87,7 @@ export class MovimentacoesController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
+  @Permissions('estoque.excluir')
   remove(@Param('id') id: string) {
     return this.movimentacoesService.remove(id);
   }

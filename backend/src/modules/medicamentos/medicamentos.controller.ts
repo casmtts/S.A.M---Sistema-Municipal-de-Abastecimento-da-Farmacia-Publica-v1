@@ -17,9 +17,11 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @Controller('medicamentos')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Permissions('estoque.visualizar')
 export class MedicamentosController {
   constructor(private readonly medicamentosService: MedicamentosService) {}
 
@@ -49,6 +51,7 @@ export class MedicamentosController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
+  @Permissions('estoque.criar')
   create(@Body() createMedicamentoDto: CreateMedicamentoDto) {
     return this.medicamentosService.create(createMedicamentoDto);
   }
@@ -62,12 +65,14 @@ export class MedicamentosController {
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
+  @Permissions('estoque.editar')
   update(@Param('id') id: string, @Body() updateMedicamentoDto: UpdateMedicamentoDto) {
     return this.medicamentosService.update(id, updateMedicamentoDto);
   }
 
   @Patch(':id/estoque')
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO, UserRole.ATENDENTE)
+  @Permissions('estoque.movimentar')
   updateEstoque(@Param('id') id: string, @Body() updateEstoqueDto: UpdateEstoqueDto, @Request() req: any) {
     return this.medicamentosService.updateEstoque(
       id,
@@ -80,6 +85,7 @@ export class MedicamentosController {
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
+  @Permissions('estoque.excluir')
   remove(@Param('id') id: string) {
     return this.medicamentosService.remove(id);
   }
