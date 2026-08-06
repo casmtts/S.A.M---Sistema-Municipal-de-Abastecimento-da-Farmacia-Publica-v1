@@ -1,9 +1,8 @@
-import { IsDateString, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsDateString, IsOptional, IsString, Matches, MaxLength, IsUUID } from 'class-validator';
 
 export class AuditoriaQueryDto {
   @IsOptional()
-  @IsString()
-  @MaxLength(80)
+  @IsUUID()
   usuarioId?: string;
 
   @IsOptional()

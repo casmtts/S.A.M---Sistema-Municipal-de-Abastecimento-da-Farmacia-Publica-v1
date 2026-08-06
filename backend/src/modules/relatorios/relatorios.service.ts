@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
 import { formatadores } from '../../common/utils/formatadores.util';
@@ -27,6 +27,7 @@ export class RelatoriosService {
 
   async gerarRelatorio(options: RelatorioOptionsDto): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     try {
+      this.validarPeriodo(options);
       let dados: any[];
       let titulo: string;
       let colunas: any[];
@@ -69,7 +70,7 @@ export class RelatoriosService {
           colunas = usuarios.colunas;
           break;
         default:
-          throw new Error('Tipo de relatório não suportado');
+        throw new BadRequestException('Tipo de relatório inválido.');
       }
 
       const { data: dataGeracao, hora: horaGeracao } = formatadores.getDataHoraAtual();
@@ -93,9 +94,20 @@ export class RelatoriosService {
     } catch (error) {
       if (error instanceof Error) {
         this.logger.error('Erro ao gerar relatório.', error.stack);
-        throw new Error(error.message);
+        if (error instanceof BadRequestException) throw error;
+        throw new InternalServerErrorException('Não foi possível gerar o relatório.');
       }
-      throw new Error('Erro desconhecido ao gerar relatório');
+      throw new InternalServerErrorException('Não foi possível gerar o relatório.');
+    }
+  }
+
+  private validarPeriodo(options: RelatorioOptionsDto) {
+    if (!options.dataInicio && !options.dataFim) return;
+    if (!options.dataInicio || !options.dataFim) throw new BadRequestException('Informe o início e o fim do período.');
+    const inicio = new Date(options.dataInicio);
+    const fim = new Date(options.dataFim);
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fim.getTime()) || fim < inicio || fim.getTime() - inicio.getTime() > 366 * 24 * 60 * 60 * 1000) {
+      throw new BadRequestException('O intervalo informado é inválido.');
     }
   }
 

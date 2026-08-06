@@ -1,9 +1,10 @@
-import { Controller, Post, Body, Request } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-dto';
 import { RegisterDto } from './dto/register-dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -26,5 +27,23 @@ export class AuthController {
   @Post('logout')
   async logout(@Request() req: any) {
     return this.authService.logout(req.user.id, { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId });
+  }
+
+  @Patch('password')
+  async changePassword(@Body() dto: ChangePasswordDto, @Request() req: any) {
+    return this.authService.changePassword(req.user.id, dto, {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+    });
+  }
+
+  @Post('logout-all')
+  async logoutAll(@Request() req: any) {
+    return this.authService.revokeSessions(req.user.id, {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+    });
   }
 }

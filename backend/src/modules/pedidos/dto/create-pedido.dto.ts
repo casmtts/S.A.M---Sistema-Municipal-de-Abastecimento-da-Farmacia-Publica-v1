@@ -6,6 +6,8 @@ import {
   Min,
   IsDate,
   IsNotEmpty,
+  Max,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -16,6 +18,7 @@ export class CreatePedidoDto {
 
   @IsNumber()
   @Min(1)
+  @Max(100000000)
   quantidadeSolicitada: number;
 
   @Type(() => Date)
@@ -24,9 +27,11 @@ export class CreatePedidoDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   justificativa?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   observacoes?: string;
 }

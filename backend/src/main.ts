@@ -4,18 +4,11 @@ import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { HttpErrorFilter } from './common/filters/http-error.filter';
+import { validateEnv } from './config/env.validation';
 
 async function bootstrap() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const jwtSecret = process.env.JWT_SECRET || '';
-  const databaseUrl = process.env.DATABASE_URL || '';
-  const configuredOrigins = (process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean);
-  if (!databaseUrl || jwtSecret.length < 32 || configuredOrigins.length === 0) {
-    throw new Error('Configuração obrigatória ausente ou insegura.');
-  }
-  if (isProduction && /change|troque|local|development/i.test(jwtSecret)) {
-    throw new Error('JWT_SECRET de produção inválido.');
-  }
+  const config = validateEnv(process.env);
+  const configuredOrigins = config.CORS_ORIGINS as string[];
 
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   const httpServer = app.getHttpAdapter().getInstance();

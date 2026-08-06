@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FornecedoresService } from './fornecedores.service';
 import { CreateFornecedorDto } from './dto/create-fornecedor.dto';
@@ -50,7 +51,7 @@ export class FornecedoresController {
    * Buscar fornecedor por ID
    */
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.fornecedoresService.findOne(id);
   }
 
@@ -58,7 +59,7 @@ export class FornecedoresController {
    * Buscar medicamentos de um fornecedor
    */
   @Get(':id/medicamentos')
-  getMedicamentosPorFornecedor(@Param('id') id: string) {
+  getMedicamentosPorFornecedor(@Param('id', ParseUUIDPipe) id: string) {
     return this.fornecedoresService.getMedicamentosPorFornecedor(id);
   }
 
@@ -79,7 +80,7 @@ export class FornecedoresController {
   @Roles(UserRole.ADMIN)
   @Permissions('fornecedores.editar')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateFornecedorDto: UpdateFornecedorDto,
   ) {
     return this.fornecedoresService.update(id, updateFornecedorDto);
@@ -91,7 +92,7 @@ export class FornecedoresController {
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
   @Permissions('fornecedores.editar')
-  toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean) {
+  toggleStatus(@Param('id', ParseUUIDPipe) id: string, @Body('ativo') ativo: boolean) {
     return this.fornecedoresService.toggleStatus(id, ativo);
   }
 
@@ -101,7 +102,7 @@ export class FornecedoresController {
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('fornecedores.excluir')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.fornecedoresService.remove(id);
   }
 }

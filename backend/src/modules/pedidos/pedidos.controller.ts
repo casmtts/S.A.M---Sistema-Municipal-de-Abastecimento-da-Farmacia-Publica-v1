@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { PedidosService } from './pedidos.service';
 import { CreatePedidoDto } from './dto/create-pedido.dto';
@@ -44,7 +45,7 @@ export class PedidosController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.pedidosService.findOne(id);
   }
 
@@ -58,7 +59,7 @@ export class PedidosController {
   @Patch(':id/aprovar')
   @Roles(UserRole.ADMIN, UserRole.GESTOR)
   @Permissions('pedidos.aprovar')
-  aprovar(@Param('id') id: string, @Request() req) {
+  aprovar(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
     return this.pedidosService.aprovar(id, req.user.id);
   }
 
@@ -66,7 +67,7 @@ export class PedidosController {
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
   @Permissions('pedidos.entregar')
   registrarEntrega(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body('quantidade') quantidade: number,
   ) {
     return this.pedidosService.registrarEntrega(id, quantidade);
@@ -75,21 +76,21 @@ export class PedidosController {
   @Patch(':id/cancelar')
   @Roles(UserRole.ADMIN, UserRole.GESTOR)
   @Permissions('pedidos.cancelar')
-  cancelar(@Param('id') id: string, @Body('motivo') motivo: string) {
+  cancelar(@Param('id', ParseUUIDPipe) id: string, @Body('motivo') motivo: string) {
     return this.pedidosService.cancelar(id, motivo);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('pedidos.editar')
-  update(@Param('id') id: string, @Body() updatePedidoDto: UpdatePedidoDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updatePedidoDto: UpdatePedidoDto) {
     return this.pedidosService.update(id, updatePedidoDto);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('pedidos.excluir')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.pedidosService.remove(id);
   }
 }

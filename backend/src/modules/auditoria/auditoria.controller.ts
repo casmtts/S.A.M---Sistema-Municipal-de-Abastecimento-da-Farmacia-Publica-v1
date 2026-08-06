@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Res, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, Res, Request, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -25,6 +25,7 @@ export class AuditoriaController {
       dadosDepois: { formato: formato === 'CSV' ? 'CSV' : 'PDF', filtros: query },
       ip: req.ip,
       userAgent: req.get('user-agent'),
+      requestId: req.requestId,
     };
     try {
       const file = await this.service.exportar(query, formato === 'CSV' ? 'CSV' : 'PDF');
@@ -34,7 +35,7 @@ export class AuditoriaController {
       res.setHeader('Content-Length', file.buffer.length);
       res.send(file.buffer);
     } catch (error) {
-      void this.service.registrar({ ...auditEvent, sucesso: false, erro: error instanceof Error ? error.message : 'Falha na exportação' });
+      void this.service.registrar({ ...auditEvent, sucesso: false, erro: 'Falha na exportação' });
       throw error;
     }
   }
@@ -47,5 +48,5 @@ export class AuditoriaController {
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.visualizar')
-  detalhar(@Param('id') id: string) { return this.service.detalhar(id); }
+  detalhar(@Param('id', ParseUUIDPipe) id: string) { return this.service.detalhar(id); }
 }

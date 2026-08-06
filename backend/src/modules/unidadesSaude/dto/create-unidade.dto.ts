@@ -94,5 +94,6 @@ export class CreateUnidadeDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   observacoes?: string;
 }

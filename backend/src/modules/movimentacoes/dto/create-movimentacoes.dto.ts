@@ -6,6 +6,8 @@ import {
   IsUUID,
   Min,
   IsNotEmpty,
+  Max,
+  MaxLength,
 } from 'class-validator';
 
 export enum TipoMovimentacao {
@@ -24,14 +26,17 @@ export class CreateMovimentacaoDto {
 
   @IsNumber()
   @Min(1)
+  @Max(100000000)
   quantidade: number;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   documentoReferencia?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   observacao?: string;
 
   @IsOptional()

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Put, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Put, Body, Request, UseGuards } from '@nestjs/common';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -30,12 +30,12 @@ export class PermissoesController {
   @Get('usuarios/:id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('permissoes.visualizar')
-  usuario(@Param('id') id: string) { return this.service.usuario(id); }
+  usuario(@Param('id', ParseUUIDPipe) id: string) { return this.service.usuario(id); }
 
   @Put('usuarios/:id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('permissoes.editar')
-  atualizarUsuario(@Param('id') id: string, @Body() dto: UpdateUserPermissionsDto, @Request() req: any) { return this.service.atualizarUsuario(id, dto, req.user.id, req.requestId); }
+  atualizarUsuario(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserPermissionsDto, @Request() req: any) { return this.service.atualizarUsuario(id, dto, req.user.id, req.requestId); }
 
   @Get('minhas')
   minhas(@Request() req: any) { return this.service.minhas(req.user.id); }

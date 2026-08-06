@@ -18,13 +18,14 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HealthModule } from './health/health.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
+import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      validate: (config) => config,
+      validate: validateEnv,
     }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 100, blockDuration: 60000 }]),
     PrismaModule,

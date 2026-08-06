@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseUUIDPipe,
   Delete,
   UseGuards,
   Request,
@@ -32,7 +33,7 @@ export class UsuariosController {
 
   @Get(':id')
   @Roles(UserRole.ADMIN)
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usuariosService.findOne(id);
   }
 
@@ -46,21 +47,21 @@ export class UsuariosController {
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.editar')
-  update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto, @Request() req: any) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUsuarioDto: UpdateUsuarioDto, @Request() req: any) {
     return this.usuariosService.update(id, updateUsuarioDto, req.user.id, req.requestId);
   }
 
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.aprovar')
-  toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean, @Request() req: any) {
+  toggleStatus(@Param('id', ParseUUIDPipe) id: string, @Body('ativo') ativo: boolean, @Request() req: any) {
     return this.usuariosService.toggleStatus(id, ativo, req.user.id, req.requestId);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.excluir')
-  remove(@Param('id') id: string, @Request() req: any) {
+  remove(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     return this.usuariosService.remove(id, req.user.id, req.requestId);
   }
 }

@@ -8,6 +8,8 @@ import {
   UseGuards,
   Request,
   Query,
+  BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { MovimentacoesService } from './movimentacoes.service';
 import { CreateMovimentacaoDto } from './dto/create-movimentacoes.dto';
@@ -50,11 +52,14 @@ export class MovimentacoesController {
   getByPeriodo(@Query('inicio') inicio: string, @Query('fim') fim: string) {
     const dataInicio = new Date(inicio);
     const dataFim = new Date(fim);
+    if (!inicio || !fim || Number.isNaN(dataInicio.getTime()) || Number.isNaN(dataFim.getTime()) || dataFim < dataInicio || dataFim.getTime() - dataInicio.getTime() > 366 * 24 * 60 * 60 * 1000) {
+      throw new BadRequestException('O intervalo informado é inválido.');
+    }
     return this.movimentacoesService.getByPeriodo(dataInicio, dataFim);
   }
 
   @Get('medicamento/:id')
-  getByMedicamento(@Param('id') id: string) {
+  getByMedicamento(@Param('id', ParseUUIDPipe) id: string) {
     return this.movimentacoesService.getByMedicamento(id);
   }
 
@@ -68,7 +73,7 @@ export class MovimentacoesController {
   // ========== ROTAS COM PARÂMETRO ID ==========
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.movimentacoesService.findOne(id);
   }
 
@@ -88,7 +93,7 @@ export class MovimentacoesController {
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('estoque.excluir')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.movimentacoesService.remove(id);
   }
 }

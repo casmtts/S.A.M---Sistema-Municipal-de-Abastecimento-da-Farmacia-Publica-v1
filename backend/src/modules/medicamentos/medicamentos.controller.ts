@@ -10,6 +10,7 @@ import {
   Request,
   ParseIntPipe,
   BadRequestException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { MedicamentosService } from './medicamentos.service';
 import { CreateMedicamentoDto } from './dto/create-medicamento.dto';
@@ -62,21 +63,21 @@ export class MedicamentosController {
   // ========== ROTAS COM PARÂMETROS ==========
   
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.medicamentosService.findOne(id);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
   @Permissions('estoque.editar')
-  update(@Param('id') id: string, @Body() updateMedicamentoDto: UpdateMedicamentoDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMedicamentoDto: UpdateMedicamentoDto) {
     return this.medicamentosService.update(id, updateMedicamentoDto);
   }
 
   @Patch(':id/estoque')
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO, UserRole.ATENDENTE)
   @Permissions('estoque.movimentar')
-  updateEstoque(@Param('id') id: string, @Body() updateEstoqueDto: UpdateEstoqueDto, @Request() req: any) {
+  updateEstoque(@Param('id', ParseUUIDPipe) id: string, @Body() updateEstoqueDto: UpdateEstoqueDto, @Request() req: any) {
     return this.medicamentosService.updateEstoque(
       id,
       updateEstoqueDto.quantidade,
@@ -89,7 +90,7 @@ export class MedicamentosController {
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('estoque.excluir')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.medicamentosService.remove(id);
   }
 }

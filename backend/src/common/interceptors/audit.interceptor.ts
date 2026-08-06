@@ -16,7 +16,7 @@ export class AuditInterceptor implements NestInterceptor {
     const evento = { usuarioId: request.user?.id, requestId: request.requestId, acao, modulo, recurso, recursoId: request.params?.id, descricao: `${acao} em ${recurso || modulo}`, dadosDepois: method === 'POST' || method === 'PATCH' ? request.body : undefined, ip: request.ip, userAgent: request.get('user-agent') };
     return next.handle().pipe(
       tap(() => { void this.auditoria.registrar(evento); }),
-      catchError((error) => { void this.auditoria.registrar({ ...evento, sucesso: false, erro: error instanceof Error ? error.message : 'Falha na operação' }); return throwError(() => error); }),
+      catchError((error) => { void this.auditoria.registrar({ ...evento, sucesso: false, erro: 'Falha na operação' }); return throwError(() => error); }),
     );
   }
 

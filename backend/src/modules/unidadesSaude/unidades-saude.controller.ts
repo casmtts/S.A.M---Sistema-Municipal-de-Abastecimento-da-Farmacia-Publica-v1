@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseUUIDPipe,
   Delete,
   UseGuards,
 } from '@nestjs/common';
@@ -61,7 +62,7 @@ export class UnidadesSaudeController {
   // ========== ROTAS COM PARÂMETRO ID ==========
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.unidadesSaudeService.findOne(id);
   }
 
@@ -77,21 +78,21 @@ export class UnidadesSaudeController {
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('unidades.editar')
-  update(@Param('id') id: string, @Body() updateUnidadeDto: UpdateUnidadeDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUnidadeDto: UpdateUnidadeDto) {
     return this.unidadesSaudeService.update(id, updateUnidadeDto);
   }
 
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
   @Permissions('unidades.editar')
-  toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean) {
+  toggleStatus(@Param('id', ParseUUIDPipe) id: string, @Body('ativo') ativo: boolean) {
     return this.unidadesSaudeService.toggleStatus(id, ativo);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('unidades.excluir')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.unidadesSaudeService.remove(id);
   }
 }

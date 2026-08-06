@@ -7,6 +7,7 @@ import {
   Min,
   MaxLength,
   IsNotEmpty,
+  Max,
 } from 'class-validator';
 
 export class CreateFornecedorDto {
@@ -83,6 +84,7 @@ export class CreateFornecedorDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(3650)
   prazoEntrega?: number;
 
   @IsOptional()
@@ -96,5 +98,6 @@ export class CreateFornecedorDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   observacoes?: string;
 }

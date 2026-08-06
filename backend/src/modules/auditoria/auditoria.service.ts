@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditoriaQueryDto } from './dto/auditoria-query.dto';
 
@@ -61,13 +61,21 @@ export class AuditoriaService {
   async listar(query: AuditoriaQueryDto, maxLimit = 100) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(maxLimit, Math.max(1, Number(query.limit) || 20));
+    const inicio = query.dataInicio ? new Date(query.dataInicio) : undefined;
+    const fim = query.dataFim ? new Date(query.dataFim) : undefined;
+    if (inicio && fim && fim.getTime() < inicio.getTime()) {
+      throw new BadRequestException('O intervalo informado é inválido.');
+    }
+    if (inicio && fim && fim.getTime() - inicio.getTime() > 366 * 24 * 60 * 60 * 1000) {
+      throw new BadRequestException('O intervalo máximo permitido é de 366 dias.');
+    }
     const where = {
       ...(query.usuarioId ? { usuarioId: query.usuarioId } : {}),
       ...(query.acao ? { acao: query.acao } : {}),
       ...(query.modulo ? { modulo: query.modulo } : {}),
       ...(query.dataInicio || query.dataFim ? { createdAt: {
-        ...(query.dataInicio ? { gte: new Date(query.dataInicio) } : {}),
-        ...(query.dataFim ? { lte: new Date(query.dataFim) } : {}),
+        ...(inicio ? { gte: inicio } : {}),
+        ...(fim ? { lte: fim } : {}),
       } } : {}),
     };
     const [data, total] = await this.prisma.$transaction([

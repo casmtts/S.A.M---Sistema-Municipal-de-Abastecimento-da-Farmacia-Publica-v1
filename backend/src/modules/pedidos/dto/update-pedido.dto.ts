@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreatePedidoDto } from './create-pedido.dto';
-import { IsEnum, IsOptional, IsNumber } from 'class-validator';
+import { IsEnum, IsOptional, IsNumber, Min, Max } from 'class-validator';
 
 export enum StatusPedido {
   PENDENTE = 'PENDENTE',
@@ -18,5 +18,7 @@ export class UpdatePedidoDto extends PartialType(CreatePedidoDto) {
 
   @IsOptional()
   @IsNumber()
+  @Min(0)
+  @Max(100000000)
   quantidadeEntregue?: number;
 }
