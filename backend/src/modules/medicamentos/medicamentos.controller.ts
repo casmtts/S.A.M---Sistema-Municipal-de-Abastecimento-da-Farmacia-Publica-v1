@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   Request,
+  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { MedicamentosService } from './medicamentos.service';
 import { CreateMedicamentoDto } from './dto/create-medicamento.dto';
@@ -33,8 +35,9 @@ export class MedicamentosController {
   }
 
   @Get('vencer/:dias')
-  getProximosVencer(@Param('dias') dias: string) {
-    return this.medicamentosService.getProximosVencer(parseInt(dias));
+  getProximosVencer(@Param('dias', ParseIntPipe) dias: number) {
+    if (dias < 1 || dias > 365) throw new BadRequestException('O período deve estar entre 1 e 365 dias.');
+    return this.medicamentosService.getProximosVencer(dias);
   }
 
   @Get('resumo')

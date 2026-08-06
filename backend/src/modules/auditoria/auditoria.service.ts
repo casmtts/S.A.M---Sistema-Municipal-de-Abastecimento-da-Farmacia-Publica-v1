@@ -15,9 +15,13 @@ export type AuditoriaEvento = {
   userAgent?: string;
   sucesso?: boolean;
   erro?: string;
+  requestId?: string;
 };
 
-const SENSITIVE_KEYS = new Set(['senha', 'password', 'token', 'access_token', 'authorization', 'jwt', 'secret']);
+const SENSITIVE_KEYS = new Set([
+  'senha', 'password', 'senhatual', 'novasenha', 'confirmarsenha',
+  'token', 'access_token', 'authorization', 'cookie', 'set-cookie', 'jwt', 'secret',
+]);
 
 @Injectable()
 export class AuditoriaService {
@@ -46,11 +50,11 @@ export class AuditoriaService {
           userAgent: evento.userAgent,
           sucesso: evento.sucesso ?? true,
           erro: evento.erro,
+          requestId: evento.requestId,
         },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Falha desconhecida';
-      this.logger.error(`Não foi possível registrar auditoria: ${message}`, error instanceof Error ? error.stack : undefined);
+      this.logger.error('Não foi possível registrar auditoria.', error instanceof Error ? error.stack : undefined);
     }
   }
 

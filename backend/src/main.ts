@@ -1,21 +1,35 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { HttpErrorFilter } from './common/filters/http-error.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const jwtSecret = process.env.JWT_SECRET || '';
+  const databaseUrl = process.env.DATABASE_URL || '';
+  const configuredOrigins = (process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+  if (!databaseUrl || jwtSecret.length < 32 || configuredOrigins.length === 0) {
+    throw new Error('Configuração obrigatória ausente ou insegura.');
+  }
+  if (isProduction && /change|troque|local|development/i.test(jwtSecret)) {
+    throw new Error('JWT_SECRET de produção inválido.');
+  }
+
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const httpServer = app.getHttpAdapter().getInstance();
+  httpServer.disable('x-powered-by');
+  httpServer.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
+  app.use(helmet());
+  app.use(json({ limit: '100kb' }));
+  app.use(urlencoded({ extended: false, limit: '100kb' }));
 
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'https://s-a-m-sistema-municipal-de-abasteci.vercel.app',
-    ],
+    origin: (origin, callback) => callback(null, !origin || configuredOrigins.includes(origin)),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
   });
 
   app.useGlobalPipes(

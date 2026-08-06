@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsDateString, MaxLength } from 'class-validator';
 
 export enum TipoRelatorio {
   MEDICAMENTOS = 'MEDICAMENTOS',
@@ -31,5 +31,6 @@ export class RelatorioOptionsDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(40)
   status?: string;
 }

@@ -20,7 +20,7 @@ export class AuthService {
     private auditoria: AuditoriaService,
   ) {}
 
-  async login(loginDto: LoginDto, contexto?: { ip?: string; userAgent?: string }) {
+  async login(loginDto: LoginDto, contexto?: { ip?: string; userAgent?: string; requestId?: string }) {
     const { email, senha } = loginDto;
 
     const usuario = await this.prisma.usuario.findUnique({
@@ -28,23 +28,23 @@ export class AuthService {
     });
 
     if (!usuario) {
-      await this.auditoria.registrar({ acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login inválida', dadosDepois: { email }, ip: contexto?.ip, userAgent: contexto?.userAgent, sucesso: false });
+      await this.auditoria.registrar({ acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login inválida', dadosDepois: { email }, ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId, sucesso: false });
       throw new UnauthorizedException('Email ou senha inválidos');
     }
 
     if (!usuario.ativo) {
-      await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login de cadastro pendente', ip: contexto?.ip, userAgent: contexto?.userAgent, sucesso: false });
+      await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login de cadastro pendente', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId, sucesso: false });
       throw new UnauthorizedException('Cadastro aguardando aprovação do administrador');
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaValida) {
-      await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login com senha inválida', ip: contexto?.ip, userAgent: contexto?.userAgent, sucesso: false });
+      await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login com senha inválida', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId, sucesso: false });
       throw new UnauthorizedException('Email ou senha inválidos');
     }
 
-    await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_SUCESSO', modulo: 'auth', descricao: 'Login realizado com sucesso', ip: contexto?.ip, userAgent: contexto?.userAgent });
+    await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_SUCESSO', modulo: 'auth', descricao: 'Login realizado com sucesso', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId });
 
     await this.prisma.usuario.update({
       where: { id: usuario.id },
@@ -55,6 +55,7 @@ export class AuthService {
       sub: usuario.id,
       email: usuario.email,
       role: usuario.role,
+      tokenVersion: usuario.tokenVersion,
     };
 
     return {
@@ -68,7 +69,7 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto, contexto?: { ip?: string; userAgent?: string }) {
+  async register(registerDto: RegisterDto, contexto?: { ip?: string; userAgent?: string; requestId?: string }) {
     const cpf = normalizarCpf(registerDto.cpf);
     const telefone = normalizarTelefone(registerDto.telefone);
     if (!cpfValido(cpf)) throw new BadRequestException('CPF inválido');
@@ -104,15 +105,15 @@ export class AuthService {
     // Retorna o usuário sem a senha
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { senha, ...result } = usuario;
-    await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'CADASTRO_SOLICITADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: usuario.id, descricao: 'Cadastro público enviado para aprovação', ip: contexto?.ip, userAgent: contexto?.userAgent });
+    await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'CADASTRO_SOLICITADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: usuario.id, descricao: 'Cadastro público enviado para aprovação', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId });
     return {
       ...result,
       message: 'Cadastro recebido. Aguarde a aprovação do administrador.',
     };
   }
 
-  async logout(usuarioId: string, contexto?: { ip?: string; userAgent?: string }) {
-    await this.auditoria.registrar({ usuarioId, acao: 'LOGOUT', modulo: 'auth', descricao: 'Logout realizado', ip: contexto?.ip, userAgent: contexto?.userAgent });
+  async logout(usuarioId: string, contexto?: { ip?: string; userAgent?: string; requestId?: string }) {
+    await this.auditoria.registrar({ usuarioId, acao: 'LOGOUT', modulo: 'auth', descricao: 'Logout realizado', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId });
     return { message: 'Logout registrado.' };
   }
 }

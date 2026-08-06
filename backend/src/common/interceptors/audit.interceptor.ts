@@ -13,7 +13,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (path.startsWith('/auth') || path.startsWith('/auditoria') || path.startsWith('/permissoes') || path.startsWith('/usuarios') || method === 'GET' && !path.includes('/exportar')) return next.handle();
     const { modulo, recurso } = this.resourceFromPath(path);
     const acao = this.actionFromRequest(method, path);
-    const evento = { usuarioId: request.user?.id, acao, modulo, recurso, recursoId: request.params?.id, descricao: `${acao} em ${recurso || modulo}`, dadosDepois: method === 'POST' || method === 'PATCH' ? request.body : undefined, ip: request.ip, userAgent: request.get('user-agent') };
+    const evento = { usuarioId: request.user?.id, requestId: request.requestId, acao, modulo, recurso, recursoId: request.params?.id, descricao: `${acao} em ${recurso || modulo}`, dadosDepois: method === 'POST' || method === 'PATCH' ? request.body : undefined, ip: request.ip, userAgent: request.get('user-agent') };
     return next.handle().pipe(
       tap(() => { void this.auditoria.registrar(evento); }),
       catchError((error) => { void this.auditoria.registrar({ ...evento, sucesso: false, erro: error instanceof Error ? error.message : 'Falha na operação' }); return throwError(() => error); }),

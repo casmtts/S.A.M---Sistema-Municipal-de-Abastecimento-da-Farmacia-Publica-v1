@@ -25,7 +25,7 @@ export class PermissoesController {
   @Put('papeis/:role')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('permissoes.editar')
-  atualizarPapel(@Param('role') role: UserRole, @Body() dto: UpdateRolePermissionsDto, @Request() req: any) { return this.service.atualizarPapel(role, dto, req.user.id); }
+  atualizarPapel(@Param('role') role: UserRole, @Body() dto: UpdateRolePermissionsDto, @Request() req: any) { return this.service.atualizarPapel(role, dto, req.user.id, req.requestId); }
 
   @Get('usuarios/:id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
@@ -35,7 +35,7 @@ export class PermissoesController {
   @Put('usuarios/:id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('permissoes.editar')
-  atualizarUsuario(@Param('id') id: string, @Body() dto: UpdateUserPermissionsDto, @Request() req: any) { return this.service.atualizarUsuario(id, dto, req.user.id); }
+  atualizarUsuario(@Param('id') id: string, @Body() dto: UpdateUserPermissionsDto, @Request() req: any) { return this.service.atualizarUsuario(id, dto, req.user.id, req.requestId); }
 
   @Get('minhas')
   minhas(@Request() req: any) { return this.service.minhas(req.user.id); }

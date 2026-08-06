@@ -7,10 +7,12 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import type { SignOptions } from 'jsonwebtoken';
 import { AuditoriaModule } from '../auditoria/auditoria.module';
+import { PrismaModule } from '../../../prisma/prisma.module';
 
 @Module({
   imports: [
     AuditoriaModule,
+    PrismaModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({

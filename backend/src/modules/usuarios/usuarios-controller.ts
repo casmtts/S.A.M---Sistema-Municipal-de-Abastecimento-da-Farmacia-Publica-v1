@@ -40,27 +40,27 @@ export class UsuariosController {
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.criar')
   create(@Body() createUsuarioDto: CreateUsuarioDto, @Request() req: any) {
-    return this.usuariosService.create(createUsuarioDto, req.user.id);
+    return this.usuariosService.create(createUsuarioDto, req.user.id, req.requestId);
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.editar')
   update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto, @Request() req: any) {
-    return this.usuariosService.update(id, updateUsuarioDto, req.user.id);
+    return this.usuariosService.update(id, updateUsuarioDto, req.user.id, req.requestId);
   }
 
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.aprovar')
   toggleStatus(@Param('id') id: string, @Body('ativo') ativo: boolean, @Request() req: any) {
-    return this.usuariosService.toggleStatus(id, ativo, req.user.id);
+    return this.usuariosService.toggleStatus(id, ativo, req.user.id, req.requestId);
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.excluir')
   remove(@Param('id') id: string, @Request() req: any) {
-    return this.usuariosService.remove(id, req.user.id);
+    return this.usuariosService.remove(id, req.user.id, req.requestId);
   }
 }

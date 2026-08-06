@@ -3,31 +3,32 @@ import {
   IsString,
   MinLength,
   IsOptional,
-  IsEnum,
+  MaxLength,
 } from 'class-validator';
-import { UserRole } from '../../../common/enums/user-role.enum';
 
 export class RegisterDto {
   @IsString()
+  @MaxLength(120)
   nome: string;
 
   @IsEmail()
+  @MaxLength(254)
   email: string;
 
   @IsString()
+  @MaxLength(20)
   cpf: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
+  @MaxLength(128)
   senha: string;
 
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
-
-  @IsOptional()
+  @MaxLength(20)
   telefone?: string;
 
   @IsOptional()
+  @MaxLength(120)
   cargo?: string;
 }

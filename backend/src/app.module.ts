@@ -16,13 +16,17 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HealthModule } from './health/health.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      validate: (config) => config,
     }),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 100, blockDuration: 60000 }]),
     PrismaModule,
     AuthModule,
     UsuariosModule,
@@ -38,8 +42,16 @@ import { HealthModule } from './health/health.module';
   ],
   providers: [
     {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestIdInterceptor,
+    },
+    {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
     {
       provide: APP_GUARD,

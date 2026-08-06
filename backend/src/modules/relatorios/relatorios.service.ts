@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
 import { formatadores } from '../../common/utils/formatadores.util';
@@ -21,6 +21,8 @@ const printer = new PdfPrinter(fonts);
 
 @Injectable()
 export class RelatoriosService {
+  private readonly logger = new Logger(RelatoriosService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async gerarRelatorio(options: RelatorioOptionsDto): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
@@ -90,7 +92,7 @@ export class RelatoriosService {
       }
     } catch (error) {
       if (error instanceof Error) {
-        console.error('❌ Erro ao gerar relatório:', error.message);
+        this.logger.error('Erro ao gerar relatório.', error.stack);
         throw new Error(error.message);
       }
       throw new Error('Erro desconhecido ao gerar relatório');

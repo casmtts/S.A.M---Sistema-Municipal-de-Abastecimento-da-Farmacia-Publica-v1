@@ -54,6 +54,7 @@ model Usuario {
   senha        String
   role         UserRole  @default(ATENDENTE)
   ativo        Boolean   @default(true)
+  tokenVersion Int       @default(0)
   telefone     String?
   cargo        String?
   unidadeId    String?
@@ -124,12 +125,14 @@ model LogAuditoria {
   userAgent    String?
   sucesso      Boolean  @default(true)
   erro         String?
+  requestId    String?
   createdAt    DateTime @default(now())
   usuario      Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([usuarioId, createdAt])
   @@index([acao, createdAt])
   @@index([modulo, createdAt])
+  @@index([requestId])
   @@map("logs_auditoria")
 }
 

@@ -1,8 +1,9 @@
-import { IsArray, IsBoolean, IsString, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class PermissionValueDto {
   @IsString()
+  @MaxLength(100)
   chave: string;
 
   @IsBoolean()
@@ -11,6 +12,7 @@ export class PermissionValueDto {
 
 export class UpdateRolePermissionsDto {
   @IsArray()
+  @ArrayMaxSize(100)
   @ValidateNested({ each: true })
   @Type(() => PermissionValueDto)
   permissoes: PermissionValueDto[];

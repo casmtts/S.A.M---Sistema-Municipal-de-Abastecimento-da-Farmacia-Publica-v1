@@ -75,10 +75,10 @@ export class PermissoesService implements OnModuleInit {
     })));
   }
 
-  async atualizarPapel(role: UserRole, dto: UpdateRolePermissionsDto, atorId?: string) {
+  async atualizarPapel(role: UserRole, dto: UpdateRolePermissionsDto, atorId?: string, requestId?: string) {
     if (role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN) throw new BadRequestException('As permissões administrativas são fixas.');
     await this.atualizarValores(dto.permissoes, { role });
-    await this.auditoria.registrar({ usuarioId: atorId, acao: 'PERMISSOES_PAPEL_ATUALIZADAS', modulo: 'permissoes', recurso: 'Papel', recursoId: role, descricao: `Permissões do papel ${role} atualizadas`, dadosDepois: dto.permissoes });
+    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'PERMISSOES_PAPEL_ATUALIZADAS', modulo: 'permissoes', recurso: 'Papel', recursoId: role, descricao: `Permissões do papel ${role} atualizadas`, dadosDepois: dto.permissoes });
     return this.papeis();
   }
 
@@ -90,7 +90,7 @@ export class PermissoesService implements OnModuleInit {
     return { usuario: user, permissoes: role?.permissoes || [], excecoes: overrides.map(({ permissao, permitido }) => ({ chave: permissao.chave, permitido })) };
   }
 
-  async atualizarUsuario(usuarioId: string, dto: UpdateUserPermissionsDto, atorId?: string) {
+  async atualizarUsuario(usuarioId: string, dto: UpdateUserPermissionsDto, atorId?: string, requestId?: string) {
     const user = await this.prisma.usuario.findUnique({ where: { id: usuarioId }, select: { role: true } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
     if (user.role === UserRole.SUPER_ADMIN) throw new ForbiddenException('O SUPER_ADMIN não pode ter permissões alteradas.');
@@ -112,7 +112,7 @@ export class PermissoesService implements OnModuleInit {
         });
       }
     });
-    await this.auditoria.registrar({ usuarioId: atorId, acao: 'PERMISSOES_USUARIO_ATUALIZADAS', modulo: 'permissoes', recurso: 'Usuario', recursoId: usuarioId, descricao: 'Exceções de permissões atualizadas', dadosDepois: dto.permissoes });
+    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'PERMISSOES_USUARIO_ATUALIZADAS', modulo: 'permissoes', recurso: 'Usuario', recursoId: usuarioId, descricao: 'Exceções de permissões atualizadas', dadosDepois: dto.permissoes });
     return this.usuario(usuarioId);
   }
 
