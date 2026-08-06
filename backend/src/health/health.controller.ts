@@ -13,9 +13,7 @@ export class HealthController {
       await this.prisma.$queryRaw`SELECT 1`;
       return {
         status: 'ok',
-        database: 'ok',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
       };
     } catch {
       throw new ServiceUnavailableException('Serviço temporariamente indisponível.');
