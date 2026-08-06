@@ -2,11 +2,13 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import { cpfValido, normalizarCpf, normalizarTelefone, telefoneValido } from '../../common/utils/brasil.util';
 
 @Injectable()
 export class UsuariosService {
@@ -65,9 +67,14 @@ export class UsuariosService {
   }
 
   async create(createUsuarioDto: CreateUsuarioDto) {
+    const cpf = normalizarCpf(createUsuarioDto.cpf);
+    const telefone = normalizarTelefone(createUsuarioDto.telefone);
+    if (!cpfValido(cpf)) throw new BadRequestException('CPF inválido');
+    if (telefone && !telefoneValido(telefone)) throw new BadRequestException('Telefone inválido');
+
     const existingUser = await this.prisma.usuario.findFirst({
       where: {
-        OR: [{ email: createUsuarioDto.email }, { cpf: createUsuarioDto.cpf }],
+        OR: [{ email: createUsuarioDto.email }, { cpf }],
       },
     });
 
@@ -80,6 +87,8 @@ export class UsuariosService {
     return this.prisma.usuario.create({
       data: {
         ...createUsuarioDto,
+        cpf,
+        telefone,
         senha: hashedPassword,
       },
       select: {
@@ -102,6 +111,14 @@ export class UsuariosService {
     await this.findOne(id);
 
     const data: any = { ...updateUsuarioDto };
+    if (updateUsuarioDto.cpf !== undefined) {
+      data.cpf = normalizarCpf(updateUsuarioDto.cpf);
+      if (!cpfValido(data.cpf)) throw new BadRequestException('CPF inválido');
+    }
+    if (updateUsuarioDto.telefone !== undefined) {
+      data.telefone = normalizarTelefone(updateUsuarioDto.telefone);
+      if (data.telefone && !telefoneValido(data.telefone)) throw new BadRequestException('Telefone inválido');
+    }
     if (updateUsuarioDto.senha) {
       data.senha = await bcrypt.hash(updateUsuarioDto.senha, 10);
     }

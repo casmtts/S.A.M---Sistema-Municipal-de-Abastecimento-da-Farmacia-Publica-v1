@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import api, { getApiErrorMessage } from './services/api';
+import { cpfValido, formatarCpf, formatarTelefone, somenteNumeros, telefoneValido } from './utils/brasil';
 import './App.css';
 import './profile-menu.css';
 
@@ -104,16 +105,25 @@ function AuthScreen({ onLogin, onRegister }: { onLogin: (email: string, senha: s
   const [submitting, setSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
-  const update = (field: keyof typeof form) => (event: any) => setForm(current => ({ ...current, [field]: event.target.value }));
+  const update = (field: keyof typeof form) => (event: any) => {
+    const value = field === 'cpf'
+      ? formatarCpf(event.target.value)
+      : field === 'telefone'
+        ? formatarTelefone(event.target.value)
+        : event.target.value;
+    setForm(current => ({ ...current, [field]: value }));
+  };
   const changeMode = (next: 'login' | 'register') => { setMode(next); setError(''); setSuccess(''); };
   const submit = async () => {
     setSubmitting(true); setError('');
     try {
       if (mode === 'login') { await onLogin(form.email, form.senha); return; }
       if (!form.nome || !form.email || !form.cpf || !form.senha) { setError('Preencha nome, e-mail, CPF e senha.'); return; }
+      if (!cpfValido(form.cpf)) { setError('Informe um CPF válido.'); return; }
+      if (form.telefone && !telefoneValido(form.telefone)) { setError('Informe um telefone brasileiro válido.'); return; }
       if (form.senha.length < 6) { setError('A senha precisa ter pelo menos 6 caracteres.'); return; }
       if (form.senha !== form.confirmarSenha) { setError('As senhas não conferem.'); return; }
-      await onRegister({ nome: form.nome, email: form.email, cpf: form.cpf, senha: form.senha, telefone: form.telefone || undefined, cargo: form.cargo || undefined });
+      await onRegister({ nome: form.nome, email: form.email, cpf: somenteNumeros(form.cpf), senha: form.senha, telefone: form.telefone ? somenteNumeros(form.telefone) : undefined, cargo: form.cargo || undefined });
       setSuccess('Cadastro enviado. Aguarde a aprovação do administrador geral para entrar.');
       setForm(current => ({ ...current, senha: '', confirmarSenha: '' }));
     } catch (value: unknown) { setError(getApiErrorMessage(value, 'Não foi possível concluir o cadastro.')); }

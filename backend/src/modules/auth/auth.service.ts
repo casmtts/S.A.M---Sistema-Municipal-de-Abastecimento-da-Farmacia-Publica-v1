@@ -2,12 +2,14 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { LoginDto } from './dto/login-dto';
 import { RegisterDto } from './dto/register-dto';
+import { cpfValido, normalizarCpf, normalizarTelefone, telefoneValido } from '../../common/utils/brasil.util';
 
 @Injectable()
 export class AuthService {
@@ -60,9 +62,14 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
+    const cpf = normalizarCpf(registerDto.cpf);
+    const telefone = normalizarTelefone(registerDto.telefone);
+    if (!cpfValido(cpf)) throw new BadRequestException('CPF inválido');
+    if (telefone && !telefoneValido(telefone)) throw new BadRequestException('Telefone inválido');
+
     const existingUser = await this.prisma.usuario.findFirst({
       where: {
-        OR: [{ email: registerDto.email }, { cpf: registerDto.cpf }],
+        OR: [{ email: registerDto.email }, { cpf }],
       },
     });
 
@@ -76,13 +83,13 @@ export class AuthService {
       data: {
         nome: registerDto.nome,
         email: registerDto.email,
-        cpf: registerDto.cpf,
+        cpf,
         senha: hashedPassword,
         // Cadastros públicos nunca podem escolher um papel privilegiado.
         // O administrador geral aprova o acesso e ajusta a função depois.
         role: 'ATENDENTE',
         ativo: false,
-        telefone: registerDto.telefone,
+        telefone,
         cargo: registerDto.cargo,
       },
     });
