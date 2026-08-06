@@ -25,11 +25,13 @@ cp .env.example .env
 ```env
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/farmacia_municipal
 JWT_SECRET=troque-esta-chave-em-producao
-JWT_EXPIRES_IN=1d
+JWT_EXPIRES_IN=15m
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+TRUST_PROXY=false
 PORT=3001
 ```
 
-`JWT_EXPIRES_IN` aceita valores como `1d`, `12h` ou segundos numéricos. Se não for informado, a API usa `1d`.
+`JWT_SECRET` deve ter pelo menos 32 caracteres. `CORS_ORIGINS` aceita somente origens exatas separadas por vírgula. `JWT_EXPIRES_IN` aceita valores como `15m`, `12h` ou segundos numéricos.
 
 ## Execução local
 
@@ -74,6 +76,8 @@ As migrations versionadas estão em `prisma/migrations`. Em produção, use `mig
 
 - `POST /auth/register` cria um usuário inativo com papel `ATENDENTE`.
 - `POST /auth/login` só autentica usuários ativos.
+- `PATCH /auth/password` altera a senha e revoga os tokens anteriores.
+- `POST /auth/logout-all` encerra todas as sessões do usuário.
 - Rotas administrativas usam JWT, papel e permissões granulares.
 - `ADMIN` e `SUPER_ADMIN` têm acesso total; o primeiro `ADMIN` é promovido automaticamente para `SUPER_ADMIN`.
 - O `SUPER_ADMIN` não pode ser editado, desativado, ter o papel alterado ou ser removido.

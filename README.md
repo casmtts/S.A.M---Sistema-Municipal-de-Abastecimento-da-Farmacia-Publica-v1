@@ -70,12 +70,15 @@ Os valores abaixo possuem defaults para desenvolvimento. Para customizar, crie u
 POSTGRES_DB=farmacia_municipal
 POSTGRES_USER=sam
 POSTGRES_PASSWORD=troque-esta-senha
-JWT_SECRET=troque-esta-chave
-JWT_EXPIRES_IN=1d
-NODE_ENV=production
+JWT_SECRET=gere-uma-chave-aleatoria-com-pelo-menos-32-caracteres
+JWT_EXPIRES_IN=15m
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+NODE_ENV=development
 ```
 
 Não versione o arquivo `.env`. Em ambientes compartilhados ou de produção, use secrets do ambiente de execução.
+
+Para produção, use `docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d`, informe todos os secrets obrigatórios e não publique a porta do PostgreSQL. A API rejeita origens CORS que não estejam listadas em `CORS_ORIGINS`.
 
 ## Criar o primeiro administrador
 
@@ -130,7 +133,7 @@ O frontend usa `VITE_API_URL` para localizar a API. Por padrão, ele aponta para
 
 ## Endpoints principais
 
-- `GET /health/check` — verificação pública da API e da conexão com o PostgreSQL.
+- `GET /health/check` — verificação pública mínima de disponibilidade da API.
 - `POST /auth/login` — autenticação JWT.
 - `POST /auth/register` — solicitação pública de cadastro.
 - `GET /medicamentos` e `PATCH /medicamentos/:id/estoque` — estoque e movimentações.

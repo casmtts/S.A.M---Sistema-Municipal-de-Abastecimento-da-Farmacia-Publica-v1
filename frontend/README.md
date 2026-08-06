@@ -59,6 +59,7 @@ npm run preview
 - Usuários recém-cadastrados ficam pendentes até o administrador geral aprovar o acesso.
 - O botão de olho nos campos de senha permite alternar entre texto visível e oculto.
 - Erros `401` encerram a sessão local e retornam o usuário à tela de autenticação.
+- O token permanece apenas na sessão do navegador; a API aplica expiração curta, revogação por versão e validação do usuário atual.
 - A navegação oculta módulos sem permissão efetiva; a API continua validando o acesso no backend.
 
 ## Estrutura principal
