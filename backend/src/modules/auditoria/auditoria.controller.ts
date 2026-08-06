@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res, Request, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -15,12 +15,28 @@ export class AuditoriaController {
   @Get('exportar')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.exportar')
-  async exportar(@Query() query: AuditoriaQueryDto, @Query('formato') formato: 'PDF' | 'CSV', @Res() res: Response) {
-    const file = await this.service.exportar(query, formato === 'CSV' ? 'CSV' : 'PDF');
-    res.setHeader('Content-Type', file.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
-    res.setHeader('Content-Length', file.buffer.length);
-    res.send(file.buffer);
+  async exportar(@Query() query: AuditoriaQueryDto, @Query('formato') formato: 'PDF' | 'CSV', @Res() res: Response, @Request() req: any) {
+    const auditEvent = {
+      usuarioId: req.user?.id,
+      acao: 'AUDITORIA_EXPORTADA',
+      modulo: 'auditoria',
+      recurso: 'LogAuditoria',
+      descricao: `Histórico de auditoria exportado em ${formato === 'CSV' ? 'CSV' : 'PDF'}`,
+      dadosDepois: { formato: formato === 'CSV' ? 'CSV' : 'PDF', filtros: query },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    };
+    try {
+      const file = await this.service.exportar(query, formato === 'CSV' ? 'CSV' : 'PDF');
+      void this.service.registrar(auditEvent);
+      res.setHeader('Content-Type', file.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+      res.setHeader('Content-Length', file.buffer.length);
+      res.send(file.buffer);
+    } catch (error) {
+      void this.service.registrar({ ...auditEvent, sucesso: false, erro: error instanceof Error ? error.message : 'Falha na exportação' });
+      throw error;
+    }
   }
 
   @Get()
