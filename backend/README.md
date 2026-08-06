@@ -103,6 +103,7 @@ As migrations versionadas estão em `prisma/migrations`. Em produção, use `mig
 | `GET/PUT` | `/permissoes/papeis` | ADMIN/SUPER_ADMIN |
 | `GET/PUT` | `/permissoes/usuarios/:id` | ADMIN/SUPER_ADMIN |
 | `GET` | `/auditoria` | ADMIN/SUPER_ADMIN |
+| `GET` | `/auditoria/opcoes` | ADMIN/SUPER_ADMIN |
 | `GET` | `/auditoria/exportar?formato=PDF|CSV` | ADMIN/SUPER_ADMIN |
 
 ## Build e testes

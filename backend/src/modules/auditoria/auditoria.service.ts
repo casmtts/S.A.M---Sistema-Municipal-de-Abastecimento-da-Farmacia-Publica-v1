@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AuditoriaQueryDto } from './dto/auditoria-query.dto';
+import { AuditoriaQueryDto, AuditoriaStatus } from './dto/auditoria-query.dto';
 
 export type AuditoriaEvento = {
   usuarioId?: string;
@@ -73,6 +73,8 @@ export class AuditoriaService {
       ...(query.usuarioId ? { usuarioId: query.usuarioId } : {}),
       ...(query.acao ? { acao: query.acao } : {}),
       ...(query.modulo ? { modulo: query.modulo } : {}),
+      ...(query.recurso ? { recurso: query.recurso } : {}),
+      ...(query.status ? { sucesso: query.status === AuditoriaStatus.SUCESSO } : {}),
       ...(query.dataInicio || query.dataFim ? { createdAt: {
         ...(inicio ? { gte: inicio } : {}),
         ...(fim ? { lte: fim } : {}),
@@ -83,6 +85,25 @@ export class AuditoriaService {
       this.prisma.logAuditoria.count({ where }),
     ]);
     return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async opcoes() {
+    const [acoes, modulos, recursos, usuarios] = await Promise.all([
+      this.prisma.logAuditoria.findMany({ distinct: ['acao'], select: { acao: true }, orderBy: { acao: 'asc' }, take: 200 }),
+      this.prisma.logAuditoria.findMany({ distinct: ['modulo'], select: { modulo: true }, orderBy: { modulo: 'asc' }, take: 200 }),
+      this.prisma.logAuditoria.findMany({ where: { recurso: { not: null } }, distinct: ['recurso'], select: { recurso: true }, orderBy: { recurso: 'asc' }, take: 200 }),
+      this.prisma.logAuditoria.findMany({ where: { usuarioId: { not: null } }, distinct: ['usuarioId'], select: { usuarioId: true, usuarioNome: true, usuarioEmail: true }, orderBy: { usuarioNome: 'asc' }, take: 200 }),
+    ]);
+    return {
+      acoes: acoes.map(({ acao }) => acao),
+      modulos: modulos.map(({ modulo }) => modulo),
+      recursos: recursos.flatMap(({ recurso }) => recurso ? [recurso] : []),
+      usuarios: usuarios.flatMap(({ usuarioId, usuarioNome, usuarioEmail }) => usuarioId ? [{ id: usuarioId, nome: usuarioNome || usuarioEmail || 'Usuário', email: usuarioEmail }] : []),
+      status: [
+        { valor: AuditoriaStatus.SUCESSO, nome: 'Sucesso' },
+        { valor: AuditoriaStatus.FALHA, nome: 'Falha' },
+      ],
+    };
   }
 
   async detalhar(id: string) {

@@ -144,6 +144,7 @@ O frontend usa `VITE_API_URL` para localizar a API. Por padrão, ele aponta para
 - `GET /permissoes/minhas` — permissões efetivas do usuário autenticado.
 - `GET /permissoes/papeis` e `PUT /permissoes/papeis/:role` — matriz de permissões por papel.
 - `GET /auditoria` e `GET /auditoria/exportar` — histórico administrativo e exportações PDF/CSV.
+- `GET /auditoria/opcoes` — opções dinâmicas de ação, módulo, recurso, usuário e status para os filtros do histórico.
 - `POST /relatorios/exportar` — exportação de relatórios.
 
 ## Tecnologias

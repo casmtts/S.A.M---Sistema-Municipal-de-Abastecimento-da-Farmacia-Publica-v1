@@ -45,6 +45,11 @@ export class AuditoriaController {
   @Permissions('auditoria.visualizar')
   listar(@Query() query: AuditoriaQueryDto) { return this.service.listar(query); }
 
+  @Get('opcoes')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Permissions('auditoria.visualizar')
+  opcoes() { return this.service.opcoes(); }
+
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.visualizar')

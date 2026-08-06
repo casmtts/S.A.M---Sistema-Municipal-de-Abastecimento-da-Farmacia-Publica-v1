@@ -1,4 +1,9 @@
-import { IsDateString, IsOptional, IsString, Matches, MaxLength, IsUUID } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, Matches, MaxLength, IsUUID } from 'class-validator';
+
+export enum AuditoriaStatus {
+  SUCESSO = 'SUCESSO',
+  FALHA = 'FALHA',
+}
 
 export class AuditoriaQueryDto {
   @IsOptional()
@@ -14,6 +19,15 @@ export class AuditoriaQueryDto {
   @IsString()
   @MaxLength(80)
   modulo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  recurso?: string;
+
+  @IsOptional()
+  @IsEnum(AuditoriaStatus)
+  status?: AuditoriaStatus;
 
   @IsOptional()
   @IsDateString()
