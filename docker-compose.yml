@@ -1,10 +1,10 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-farmacia_municipal}
       POSTGRES_USER: ${POSTGRES_USER:-sam}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sam_local_password_change_me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sam_docker_password}
     volumes:
       - sam-postgres-data:/var/lib/postgresql/data
     ports:
