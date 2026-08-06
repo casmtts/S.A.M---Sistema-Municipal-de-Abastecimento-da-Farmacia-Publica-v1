@@ -5,7 +5,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { AuditoriaService } from './auditoria.service';
-import { AuditoriaQueryDto } from './dto/auditoria-query.dto';
+import { AuditoriaFormato, AuditoriaQueryDto } from './dto/auditoria-query.dto';
 
 @Controller('auditoria')
 @UseGuards(RolesGuard)
@@ -15,7 +15,7 @@ export class AuditoriaController {
   @Get('exportar')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.exportar')
-  async exportar(@Query() query: AuditoriaQueryDto, @Query('formato') formato: 'PDF' | 'CSV', @Res() res: Response, @Request() req: any) {
+  async exportar(@Query() query: AuditoriaQueryDto, @Query('formato') formato: AuditoriaFormato, @Res() res: Response, @Request() req: any) {
     const auditEvent = {
       usuarioId: req.user?.id,
       acao: 'AUDITORIA_EXPORTADA',
@@ -28,7 +28,7 @@ export class AuditoriaController {
       requestId: req.requestId,
     };
     try {
-      const file = await this.service.exportar(query, formato === 'CSV' ? 'CSV' : 'PDF');
+      const file = await this.service.exportar(query, formato === AuditoriaFormato.CSV ? 'CSV' : 'PDF');
       void this.service.registrar(auditEvent);
       res.setHeader('Content-Type', file.contentType);
       res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);

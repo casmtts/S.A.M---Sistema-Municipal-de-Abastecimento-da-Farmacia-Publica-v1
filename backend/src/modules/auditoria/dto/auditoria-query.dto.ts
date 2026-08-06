@@ -5,6 +5,11 @@ export enum AuditoriaStatus {
   FALHA = 'FALHA',
 }
 
+export enum AuditoriaFormato {
+  PDF = 'PDF',
+  CSV = 'CSV',
+}
+
 export class AuditoriaQueryDto {
   @IsOptional()
   @IsUUID()
@@ -28,6 +33,10 @@ export class AuditoriaQueryDto {
   @IsOptional()
   @IsEnum(AuditoriaStatus)
   status?: AuditoriaStatus;
+
+  @IsOptional()
+  @IsEnum(AuditoriaFormato)
+  formato?: AuditoriaFormato;
 
   @IsOptional()
   @IsDateString()
