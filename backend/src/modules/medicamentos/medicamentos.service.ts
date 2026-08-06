@@ -101,36 +101,16 @@ export class MedicamentosService {
     });
   }
 
-  async updateEstoque(id: string, quantidade: number, tipo: 'ENTRADA' | 'SAIDA') {
+  async updateEstoque(id: string, quantidade: number, tipo: 'ENTRADA' | 'SAIDA', responsavelId: string, responsavelNome: string) {
     const medicamento = await this.findOne(id);
-
-    let novaQuantidade = medicamento.quantidadeAtual;
-    if (tipo === 'ENTRADA') {
-      novaQuantidade += quantidade;
-    } else {
-      if (quantidade > medicamento.quantidadeAtual) {
-        throw new Error(`Estoque insuficiente. Disponível: ${medicamento.quantidadeAtual}`);
-      }
-      novaQuantidade -= quantidade;
+    if (tipo === 'SAIDA' && quantidade > medicamento.quantidadeAtual) {
+      throw new ConflictException(`Estoque insuficiente. Disponível: ${medicamento.quantidadeAtual}`);
     }
-
-    // Registrar movimentação
-    await this.prisma.movimentacao.create({
-      data: {
-        medicamentoId: id,
-        medicamentoNome: medicamento.nome,
-        tipo: tipo === 'ENTRADA' ? 'ENTRADA' : 'SAIDA',
-        quantidade,
-        responsavelId: 'system',
-        responsavelNome: 'Sistema',
-        documentoReferencia: 'Movimentação de estoque',
-      },
-    });
-
-    return this.prisma.medicamento.update({
-      where: { id },
-      data: { quantidadeAtual: novaQuantidade },
-      include: { fornecedor: true },
+    const delta = tipo === 'ENTRADA' ? quantidade : -quantidade;
+    return this.prisma.$transaction(async (tx) => {
+      const atualizado = await tx.medicamento.update({ where: { id }, data: { quantidadeAtual: { increment: delta } }, include: { fornecedor: true } });
+      await tx.movimentacao.create({ data: { medicamentoId: id, medicamentoNome: medicamento.nome, tipo: tipo === 'ENTRADA' ? 'ENTRADA' : 'SAIDA', quantidade, responsavelId, responsavelNome, documentoReferencia: 'Movimentação de estoque' } });
+      return atualizado;
     });
   }
 

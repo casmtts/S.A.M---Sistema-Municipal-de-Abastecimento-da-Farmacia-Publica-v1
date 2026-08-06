@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { MedicamentosService } from './medicamentos.service';
 import { CreateMedicamentoDto } from './dto/create-medicamento.dto';
@@ -67,11 +68,13 @@ export class MedicamentosController {
 
   @Patch(':id/estoque')
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO, UserRole.ATENDENTE)
-  updateEstoque(@Param('id') id: string, @Body() updateEstoqueDto: UpdateEstoqueDto) {
+  updateEstoque(@Param('id') id: string, @Body() updateEstoqueDto: UpdateEstoqueDto, @Request() req: any) {
     return this.medicamentosService.updateEstoque(
       id,
       updateEstoqueDto.quantidade,
       updateEstoqueDto.tipo,
+      req.user.id,
+      req.user.nome || req.user.email,
     );
   }
 
