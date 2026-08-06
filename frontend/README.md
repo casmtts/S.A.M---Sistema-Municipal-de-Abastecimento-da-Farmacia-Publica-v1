@@ -1,75 +1,67 @@
-# React + TypeScript + Vite
+# S.A.M. — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React + TypeScript do Sistema Municipal de Abastecimento. A aplicação usa Material UI, Recharts e Vite, consumindo a API NestJS com dados persistidos no PostgreSQL.
 
-Currently, two official plugins are available:
+## Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Login JWT e solicitação pública de cadastro.
+- Visualização operacional de estoque, pedidos, alertas e indicadores.
+- CRUD de medicamentos, fornecedores, unidades e usuários.
+- Aprovação administrativa de cadastros pendentes.
+- Movimentações de estoque e avanço de pedidos pela API.
+- Exportação de relatórios gerados pelo backend.
 
-## React Compiler
+## Configuração
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Requisitos: Node.js 20+ e npm.
 
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Configure a URL da API em `frontend/.env`:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_URL=http://localhost:3001
 ```
+
+O valor padrão também é `http://localhost:3001` quando a variável não existe.
+
+## Desenvolvimento
+
+```bash
+npm install
+npm run dev
+```
+
+Acesse [http://localhost:3000](http://localhost:3000). O Vite disponibiliza HMR para atualizar a interface durante o desenvolvimento.
+
+O backend pode ser iniciado localmente ou pelo Compose na raiz do projeto:
+
+```bash
+cd ..
+docker compose up --build -d
+```
+
+## Build e validação
+
+```bash
+npx tsc --noEmit
+npm run build
+npm run preview
+```
+
+## Integração com autenticação
+
+- O token JWT é armazenado na sessão do navegador e enviado como `Authorization: Bearer ...`.
+- Usuários recém-cadastrados ficam pendentes até o administrador geral aprovar o acesso.
+- O botão de olho nos campos de senha permite alternar entre texto visível e oculto.
+- Erros `401` encerram a sessão local e retornam o usuário à tela de autenticação.
+
+## Estrutura principal
+
+- `src/App.tsx`: shell da aplicação, telas ativas e integração com a API.
+- `src/services/api.ts`: cliente Axios, URL da API e interceptores JWT.
+- `src/App.css`: layout responsivo e estilos da interface.
+
+Para a arquitetura completa, Docker, banco e endpoints, consulte o [README da raiz](../README.md) e o [README do backend](../backend/README.md).
