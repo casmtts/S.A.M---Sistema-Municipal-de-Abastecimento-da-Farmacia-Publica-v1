@@ -1,6 +1,6 @@
 # S.A.M. — Backend
 
-API NestJS do Sistema Municipal de Abastecimento. O backend implementa autenticação JWT, autorização por função, regras de estoque e persistência PostgreSQL com Prisma.
+API NestJS do Sistema Municipal de Abastecimento. O backend implementa autenticação JWT, permissões granulares, auditoria permanente, regras de estoque e persistência PostgreSQL com Prisma.
 
 ## Módulos
 
@@ -11,6 +11,8 @@ API NestJS do Sistema Municipal de Abastecimento. O backend implementa autentica
 - `pedidos`: solicitação, aprovação, entrega e cancelamento.
 - `fornecedores` e `unidades-saude`: cadastros operacionais.
 - `relatorios`: exportação de relatórios em PDF e Excel.
+- `permissoes`: matriz por papel e exceções individuais.
+- `auditoria`: histórico permanente de ações e exportações PDF/CSV.
 
 ## Variáveis de ambiente
 
@@ -72,7 +74,9 @@ As migrations versionadas estão em `prisma/migrations`. Em produção, use `mig
 
 - `POST /auth/register` cria um usuário inativo com papel `ATENDENTE`.
 - `POST /auth/login` só autentica usuários ativos.
-- Rotas administrativas usam JWT e `role ADMIN`.
+- Rotas administrativas usam JWT, papel e permissões granulares.
+- `ADMIN` e `SUPER_ADMIN` têm acesso total; o primeiro `ADMIN` é promovido automaticamente para `SUPER_ADMIN`.
+- O `SUPER_ADMIN` não pode ser editado, desativado, ter o papel alterado ou ser removido.
 - `PATCH /usuarios/:id/toggle` aprova ou desativa um usuário.
 - O usuário autenticado é usado nas operações de movimentação de estoque.
 
@@ -90,6 +94,11 @@ As migrations versionadas estão em `prisma/migrations`. Em produção, use `mig
 | `GET` | `/usuarios` | ADMIN |
 | `PATCH` | `/usuarios/:id/toggle` | ADMIN |
 | `POST` | `/relatorios/exportar` | ADMIN/GESTOR |
+| `GET` | `/permissoes/minhas` | JWT |
+| `GET/PUT` | `/permissoes/papeis` | ADMIN/SUPER_ADMIN |
+| `GET/PUT` | `/permissoes/usuarios/:id` | ADMIN/SUPER_ADMIN |
+| `GET` | `/auditoria` | ADMIN/SUPER_ADMIN |
+| `GET` | `/auditoria/exportar?formato=PDF|CSV` | ADMIN/SUPER_ADMIN |
 
 ## Build e testes
 

@@ -9,6 +9,8 @@ Aplicação web de gestão de medicamentos para redes públicas de saúde. O fro
 - Fluxo de pedidos com aprovação, entrega e movimentações persistidas.
 - Relatórios exportados em PDF e Excel pelo backend.
 - Login JWT e controle de acesso por função.
+- Permissões granulares por módulo e ação, com exceções individuais.
+- Histórico permanente de auditoria com exportação em PDF e CSV.
 - Cadastro público de usuários com aprovação do administrador geral.
 
 ## Arquitetura local
@@ -84,7 +86,7 @@ O cadastro público cria usuários inativos com o papel `ATENDENTE`. Para criar 
 ```bash
 curl -X POST http://localhost:3001/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{"nome":"Administrador Geral","email":"admin@sam.local","cpf":"00000000000","senha":"troque-esta-senha"}'
+  -d '{"nome":"Administrador Geral","email":"admin@sam.local","cpf":"52998224725","senha":"troque-esta-senha"}'
 ```
 
 2. Promova o cadastro diretamente no banco:
@@ -94,6 +96,10 @@ docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
 ```
 
 Depois disso, entre no frontend com o e-mail e a senha cadastrados. O administrador verá novos cadastros pendentes na página **Usuários** e poderá aprová-los pelo botão de confirmação.
+
+O primeiro usuário promovido para `ADMIN` será convertido automaticamente em `SUPER_ADMIN` na inicialização do backend. O `SUPER_ADMIN` possui acesso total e não pode ser editado, desativado ou removido.
+
+Na página **Usuários**, as abas **Permissões** e **Histórico** permitem configurar ações por papel, criar exceções individuais e consultar/exportar a auditoria.
 
 ## Executar sem Docker
 
@@ -131,6 +137,9 @@ O frontend usa `VITE_API_URL` para localizar a API. Por padrão, ele aponta para
 - `GET/PATCH/POST/DELETE /fornecedores` — fornecedores.
 - `GET/PATCH/POST/DELETE /unidades-saude` — unidades de saúde.
 - `GET /usuarios` e `PATCH /usuarios/:id/toggle` — gestão e aprovação de usuários, restrita ao `ADMIN`.
+- `GET /permissoes/minhas` — permissões efetivas do usuário autenticado.
+- `GET /permissoes/papeis` e `PUT /permissoes/papeis/:role` — matriz de permissões por papel.
+- `GET /auditoria` e `GET /auditoria/exportar` — histórico administrativo e exportações PDF/CSV.
 - `POST /relatorios/exportar` — exportação de relatórios.
 
 ## Tecnologias
