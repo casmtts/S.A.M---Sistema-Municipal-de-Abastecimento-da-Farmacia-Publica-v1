@@ -1,8 +1,8 @@
 # S.A.M. — Sistema Municipal de Abastecimento
 
-Uma aplicação web de gestão de medicamentos para redes públicas de saúde. A interface preserva a experiência do showcase, mas agora consome o backend NestJS e persiste as operações no PostgreSQL via Prisma.
+Uma aplicação web de gestão de medicamentos para redes públicas de saúde. A interface usa o layout do showcase e consome o backend NestJS, persistindo as operações no PostgreSQL via Prisma.
 
-## O que a demonstração inclui
+## O que a aplicação inclui
 
 - Dashboard com indicadores, gráfico de consumo, alertas e pedidos recentes.
 - Gestão de estoque com busca, cadastro, edição, exclusão e movimentação de itens.
