@@ -6,9 +6,11 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import type { SignOptions } from 'jsonwebtoken';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 
 @Module({
   imports: [
+    AuditoriaModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({

@@ -1,0 +1,131 @@
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AuditoriaQueryDto } from './dto/auditoria-query.dto';
+
+export type AuditoriaEvento = {
+  usuarioId?: string;
+  acao: string;
+  modulo: string;
+  recurso?: string;
+  recursoId?: string;
+  descricao: string;
+  dadosAntes?: unknown;
+  dadosDepois?: unknown;
+  ip?: string;
+  userAgent?: string;
+  sucesso?: boolean;
+  erro?: string;
+};
+
+const SENSITIVE_KEYS = new Set(['senha', 'password', 'token', 'access_token', 'authorization', 'jwt', 'secret']);
+
+@Injectable()
+export class AuditoriaService {
+  private readonly logger = new Logger(AuditoriaService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  async registrar(evento: AuditoriaEvento): Promise<void> {
+    try {
+      const usuario = evento.usuarioId
+        ? await this.prisma.usuario.findUnique({ where: { id: evento.usuarioId }, select: { nome: true, email: true } })
+        : null;
+      await this.prisma.logAuditoria.create({
+        data: {
+          usuarioId: evento.usuarioId,
+          usuarioNome: usuario?.nome,
+          usuarioEmail: usuario?.email,
+          acao: evento.acao,
+          modulo: evento.modulo,
+          recurso: evento.recurso,
+          recursoId: evento.recursoId,
+          descricao: evento.descricao,
+          dadosAntes: this.sanitize(evento.dadosAntes) as any,
+          dadosDepois: this.sanitize(evento.dadosDepois) as any,
+          ip: evento.ip,
+          userAgent: evento.userAgent,
+          sucesso: evento.sucesso ?? true,
+          erro: evento.erro,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha desconhecida';
+      this.logger.error(`Não foi possível registrar auditoria: ${message}`, error instanceof Error ? error.stack : undefined);
+    }
+  }
+
+  async listar(query: AuditoriaQueryDto, maxLimit = 100) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(maxLimit, Math.max(1, Number(query.limit) || 20));
+    const where = {
+      ...(query.usuarioId ? { usuarioId: query.usuarioId } : {}),
+      ...(query.acao ? { acao: query.acao } : {}),
+      ...(query.modulo ? { modulo: query.modulo } : {}),
+      ...(query.dataInicio || query.dataFim ? { createdAt: {
+        ...(query.dataInicio ? { gte: new Date(query.dataInicio) } : {}),
+        ...(query.dataFim ? { lte: new Date(query.dataFim) } : {}),
+      } } : {}),
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.logAuditoria.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+      this.prisma.logAuditoria.count({ where }),
+    ]);
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  async detalhar(id: string) {
+    const item = await this.prisma.logAuditoria.findUnique({ where: { id } });
+    if (!item) throw new NotFoundException('Registro de auditoria não encontrado');
+    return item;
+  }
+
+  async exportar(query: AuditoriaQueryDto, formato: 'PDF' | 'CSV') {
+    const result = await this.listar({ ...query, page: '1', limit: '10000' }, 10000);
+    const rows = result.data.map((item) => [
+      item.createdAt.toISOString(), item.usuarioNome || 'Sistema', item.usuarioEmail || '', item.acao,
+      item.modulo, item.recurso || '', item.recursoId || '', item.descricao, item.ip || '', item.sucesso ? 'Sucesso' : 'Falha',
+    ]);
+    const headers = ['Data', 'Usuário', 'E-mail', 'Ação', 'Módulo', 'Recurso', 'ID', 'Descrição', 'IP', 'Status'];
+    if (formato === 'CSV') {
+      const csv = [headers, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(';')).join('\n');
+      return { buffer: Buffer.from(`\ufeff${csv}`, 'utf8'), contentType: 'text/csv; charset=utf-8', filename: 'historico-auditoria.csv' };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const PdfPrinter = require('pdfmake');
+    const printer = new PdfPrinter({ Roboto: { normal: 'Helvetica', bold: 'Helvetica-Bold' } });
+    const doc = {
+      content: [
+        { text: 'Histórico de auditoria', style: 'header' },
+        { text: `Registros: ${rows.length}`, margin: [0, 0, 0, 12] },
+        { table: { headerRows: 1, widths: ['auto', '*', '*', '*', '*', '*'], body: [
+          ['Data', 'Usuário', 'Ação', 'Módulo', 'Descrição', 'Status'],
+          ...rows.map((row) => [new Date(row[0]).toLocaleString('pt-BR'), row[1], row[3], row[4], row[7], row[9]]),
+        ] } },
+      ],
+      styles: { header: { fontSize: 16, bold: true, margin: [0, 0, 0, 8] } },
+      defaultStyle: { fontSize: 7 },
+    };
+    return new Promise<{ buffer: Buffer; contentType: string; filename: string }>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const pdf = printer.createPdfKitDocument(doc);
+      pdf.on('data', (chunk: Buffer) => chunks.push(chunk));
+      pdf.on('end', () => resolve({ buffer: Buffer.concat(chunks), contentType: 'application/pdf', filename: 'historico-auditoria.pdf' }));
+      pdf.on('error', reject);
+      pdf.end();
+    });
+  }
+
+  private sanitize(value: unknown): unknown {
+    if (value === undefined || value === null) return undefined;
+    if (Array.isArray(value)) return value.map((item) => this.sanitize(item));
+    if (typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !SENSITIVE_KEYS.has(key.toLowerCase()))
+      .map(([key, item]) => [key, ['cpf', 'telefone'].includes(key.toLowerCase()) ? this.mask(String(item)) : this.sanitize(item)]));
+  }
+
+  private mask(value: string) {
+    if (!value) return value;
+    return `${value.slice(0, 3)}***${value.slice(-2)}`;
+  }
+}

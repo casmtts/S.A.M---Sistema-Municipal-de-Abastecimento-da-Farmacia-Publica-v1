@@ -10,15 +10,17 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { LoginDto } from './dto/login-dto';
 import { RegisterDto } from './dto/register-dto';
 import { cpfValido, normalizarCpf, normalizarTelefone, telefoneValido } from '../../common/utils/brasil.util';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private auditoria: AuditoriaService,
   ) {}
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto, contexto?: { ip?: string; userAgent?: string }) {
     const { email, senha } = loginDto;
 
     const usuario = await this.prisma.usuario.findUnique({
@@ -26,18 +28,23 @@ export class AuthService {
     });
 
     if (!usuario) {
+      await this.auditoria.registrar({ acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login inválida', dadosDepois: { email }, ip: contexto?.ip, userAgent: contexto?.userAgent, sucesso: false });
       throw new UnauthorizedException('Email ou senha inválidos');
     }
 
     if (!usuario.ativo) {
+      await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login de cadastro pendente', ip: contexto?.ip, userAgent: contexto?.userAgent, sucesso: false });
       throw new UnauthorizedException('Cadastro aguardando aprovação do administrador');
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaValida) {
+      await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login com senha inválida', ip: contexto?.ip, userAgent: contexto?.userAgent, sucesso: false });
       throw new UnauthorizedException('Email ou senha inválidos');
     }
+
+    await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_SUCESSO', modulo: 'auth', descricao: 'Login realizado com sucesso', ip: contexto?.ip, userAgent: contexto?.userAgent });
 
     await this.prisma.usuario.update({
       where: { id: usuario.id },
@@ -61,7 +68,7 @@ export class AuthService {
     };
   }
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto, contexto?: { ip?: string; userAgent?: string }) {
     const cpf = normalizarCpf(registerDto.cpf);
     const telefone = normalizarTelefone(registerDto.telefone);
     if (!cpfValido(cpf)) throw new BadRequestException('CPF inválido');
@@ -97,9 +104,15 @@ export class AuthService {
     // Retorna o usuário sem a senha
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { senha, ...result } = usuario;
+    await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'CADASTRO_SOLICITADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: usuario.id, descricao: 'Cadastro público enviado para aprovação', ip: contexto?.ip, userAgent: contexto?.userAgent });
     return {
       ...result,
       message: 'Cadastro recebido. Aguarde a aprovação do administrador.',
     };
+  }
+
+  async logout(usuarioId: string, contexto?: { ip?: string; userAgent?: string }) {
+    await this.auditoria.registrar({ usuarioId, acao: 'LOGOUT', modulo: 'auth', descricao: 'Logout realizado', ip: contexto?.ip, userAgent: contexto?.userAgent });
+    return { message: 'Logout registrado.' };
   }
 }
