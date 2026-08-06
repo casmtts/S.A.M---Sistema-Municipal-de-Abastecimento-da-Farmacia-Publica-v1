@@ -95,6 +95,13 @@ export class PermissoesService implements OnModuleInit {
     if (!user) throw new NotFoundException('Usuário não encontrado');
     if (user.role === UserRole.SUPER_ADMIN) throw new ForbiddenException('O SUPER_ADMIN não pode ter permissões alteradas.');
     await this.prisma.$transaction(async (tx) => {
+      const existentes = await tx.permissaoUsuario.findMany({ where: { usuarioId }, include: { permissao: { select: { chave: true } } } });
+      const informadas = new Set(dto.permissoes.map(({ chave }) => chave));
+      for (const excecao of existentes) {
+        if (!informadas.has(excecao.permissao.chave)) {
+          await tx.permissaoUsuario.delete({ where: { usuarioId_permissaoId: { usuarioId, permissaoId: excecao.permissaoId } } });
+        }
+      }
       for (const value of dto.permissoes) {
         const permission = await tx.permissao.findUnique({ where: { chave: value.chave } });
         if (!permission) throw new BadRequestException(`Permissão inválida: ${value.chave}`);
