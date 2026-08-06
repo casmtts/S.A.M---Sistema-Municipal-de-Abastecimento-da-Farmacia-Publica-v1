@@ -23,8 +23,12 @@ export class AuthService {
       where: { email },
     });
 
-    if (!usuario || !usuario.ativo) {
+    if (!usuario) {
       throw new UnauthorizedException('Email ou senha inválidos');
+    }
+
+    if (!usuario.ativo) {
+      throw new UnauthorizedException('Cadastro aguardando aprovação do administrador');
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
@@ -74,7 +78,10 @@ export class AuthService {
         email: registerDto.email,
         cpf: registerDto.cpf,
         senha: hashedPassword,
-        role: registerDto.role || 'ATENDENTE',
+        // Cadastros públicos nunca podem escolher um papel privilegiado.
+        // O administrador geral aprova o acesso e ajusta a função depois.
+        role: 'ATENDENTE',
+        ativo: false,
         telefone: registerDto.telefone,
         cargo: registerDto.cargo,
       },
@@ -83,6 +90,9 @@ export class AuthService {
     // Retorna o usuário sem a senha
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { senha, ...result } = usuario;
-    return result;
+    return {
+      ...result,
+      message: 'Cadastro recebido. Aguarde a aprovação do administrador.',
+    };
   }
 }
