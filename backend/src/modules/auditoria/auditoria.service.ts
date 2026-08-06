@@ -116,7 +116,7 @@ export class AuditoriaService {
     const result = await this.listar({ ...query, page: '1', limit: '10000' }, 10000);
     const rows = result.data.map((item) => [
       item.createdAt.toISOString(), item.usuarioNome || 'Sistema', item.usuarioEmail || '', item.acao,
-      item.modulo, item.recurso || '', item.recursoId || '', item.descricao, item.ip || '', item.sucesso ? 'Sucesso' : 'Falha',
+      this.rotuloModulo(item.modulo), item.recurso || '', item.recursoId || '', item.descricao, item.ip || '', item.sucesso ? 'Sucesso' : 'Falha',
     ]);
     const headers = ['Data', 'Usuário', 'E-mail', 'Ação', 'Módulo', 'Recurso', 'ID', 'Descrição', 'IP', 'Status'];
     if (formato === 'CSV') {
@@ -160,5 +160,9 @@ export class AuditoriaService {
   private mask(value: string) {
     if (!value) return value;
     return `${value.slice(0, 3)}***${value.slice(-2)}`;
+  }
+
+  private rotuloModulo(value: string) {
+    return value.toLowerCase() === 'auth' ? 'autenticação' : value;
   }
 }
