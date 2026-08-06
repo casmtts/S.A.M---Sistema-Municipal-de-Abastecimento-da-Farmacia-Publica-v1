@@ -20,7 +20,7 @@ export class RegisterDto {
   cpf: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   @MaxLength(128)
   senha: string;
 
