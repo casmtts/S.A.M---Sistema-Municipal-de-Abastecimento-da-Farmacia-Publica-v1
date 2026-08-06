@@ -10,6 +10,33 @@ const api = axios.create({
   timeout: 30000,
 });
 
+export const getApiErrorMessage = (error: unknown, fallback = 'Não foi possível concluir a operação. Tente novamente.') => {
+  if (!axios.isAxiosError(error)) return fallback;
+
+  const status = error.response?.status;
+  if (!error.response) return 'Não foi possível conectar ao servidor. Tente novamente.';
+
+  switch (status) {
+    case 400:
+    case 422:
+      return 'Verifique os dados informados e tente novamente.';
+    case 401:
+      return 'Não foi possível autenticar ou acessar este recurso.';
+    case 403:
+      return 'Você não tem permissão para realizar esta ação.';
+    case 404:
+      return 'O recurso solicitado não foi encontrado.';
+    case 409:
+      return 'Já existe um cadastro com esses dados.';
+    case 500:
+    case 502:
+    case 503:
+      return 'Não foi possível concluir a operação agora. Tente novamente mais tarde.';
+    default:
+      return fallback;
+  }
+};
+
 // Interceptor para adicionar token
 api.interceptors.request.use(
   (config) => {
