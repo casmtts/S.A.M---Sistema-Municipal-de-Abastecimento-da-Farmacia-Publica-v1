@@ -1,10 +1,12 @@
-import { Controller, Post, Patch, Body, Request } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Request, Res, Get, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login-dto';
 import { RegisterDto } from './dto/register-dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -13,8 +15,29 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000, blockDuration: 300000 } })
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Request() req: any) {
-    return this.authService.login(loginDto, { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId });
+  async login(@Body() loginDto: LoginDto, @Request() req: any, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(loginDto, { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId });
+    this.setSessionCookie(res, result.access_token);
+    return { usuario: result.usuario };
+  }
+
+  @Get('me')
+  async me(@Request() req: any) {
+    return { usuario: await this.authService.obterUsuario(req.user.id) };
+  }
+
+  @Patch('profile')
+  async updateProfile(@Body() dto: UpdateProfileDto, @Request() req: any) {
+    return { usuario: await this.authService.atualizarPerfil(req.user.id, dto, { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId }) };
+  }
+
+  @Public()
+  @Get('session')
+  async session(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+    const token = req.cookies?.sam_session;
+    const result = await this.authService.obterSessao(token);
+    if (token && !result.usuario) this.clearSessionCookie(res);
+    return result;
   }
 
   @Public()
@@ -25,25 +48,53 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Request() req: any) {
-    return this.authService.logout(req.user.id, { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId });
+  async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.logout(req.user.id, { ip: req.ip, userAgent: req.get('user-agent'), requestId: req.requestId });
+    this.clearSessionCookie(res);
+    return result;
   }
 
   @Patch('password')
-  async changePassword(@Body() dto: ChangePasswordDto, @Request() req: any) {
-    return this.authService.changePassword(req.user.id, dto, {
+  async changePassword(@Body() dto: ChangePasswordDto, @Request() req: any, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.changePassword(req.user.id, dto, {
       ip: req.ip,
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
     });
+    this.setSessionCookie(res, result.access_token);
+    return { message: result.message };
   }
 
   @Post('logout-all')
-  async logoutAll(@Request() req: any) {
-    return this.authService.revokeSessions(req.user.id, {
+  async logoutAll(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.revokeSessions(req.user.id, {
       ip: req.ip,
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
     });
+    this.clearSessionCookie(res);
+    return result;
+  }
+
+  private setSessionCookie(response: Response, token: string) {
+    response.cookie('sam_session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: this.sessionMaxAge(),
+    });
+  }
+
+  private sessionMaxAge() {
+    const configured = process.env.JWT_EXPIRES_IN || '15m';
+    const match = /^(\d+)(s|m|h|d)$/.exec(configured);
+    if (!match) return 15 * 60 * 1000;
+    const units: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+    return Math.min(Number(match[1]) * units[match[2]], 24 * 60 * 60 * 1000);
+  }
+
+  private clearSessionCookie(response: Response) {
+    response.clearCookie('sam_session', { path: '/', sameSite: 'strict', secure: process.env.NODE_ENV === 'production' });
   }
 }

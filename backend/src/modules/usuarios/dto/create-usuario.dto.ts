@@ -24,7 +24,7 @@ export class CreateUsuarioDto {
   cpf: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(12)
   @MaxLength(128)
   senha: string;
 

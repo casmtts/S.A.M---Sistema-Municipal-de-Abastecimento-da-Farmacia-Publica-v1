@@ -30,6 +30,7 @@ const moduleLabels: Record<string, string> = {
   relatorios: 'Relatórios',
   auditoria: 'Auditoria',
   permissoes: 'Permissões',
+  privacidade: 'Privacidade',
 };
 
 const actionsByModule: Record<string, string[]> = {
@@ -42,6 +43,7 @@ const actionsByModule: Record<string, string[]> = {
   relatorios: ['visualizar', 'exportar'],
   auditoria: ['visualizar', 'exportar'],
   permissoes: ['visualizar', 'editar'],
+  privacidade: ['visualizar', 'atender'],
 };
 
 export const PERMISSION_CATALOG: PermissionDefinition[] = Object.entries(actionsByModule)

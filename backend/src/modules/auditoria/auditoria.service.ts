@@ -1,4 +1,6 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { createHmac } from 'crypto';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditoriaQueryDto, AuditoriaStatus } from './dto/auditoria-query.dto';
 
@@ -19,9 +21,12 @@ export type AuditoriaEvento = {
 };
 
 const SENSITIVE_KEYS = new Set([
+  'cpf', 'telefone', 'nome', 'email', 'usuarioemail', 'usuarionome', 'ip', 'useragent',
   'senha', 'password', 'senhatual', 'novasenha', 'confirmarsenha',
   'token', 'access_token', 'authorization', 'cookie', 'set-cookie', 'jwt', 'secret',
 ]);
+
+type AuditTransaction = Pick<Prisma.TransactionClient, 'usuario' | 'logAuditoria'>;
 
 @Injectable()
 export class AuditoriaService {
@@ -29,33 +34,46 @@ export class AuditoriaService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async registrar(evento: AuditoriaEvento): Promise<void> {
+  async registrar(evento: AuditoriaEvento, transaction?: AuditTransaction): Promise<void> {
     try {
-      const usuario = evento.usuarioId
-        ? await this.prisma.usuario.findUnique({ where: { id: evento.usuarioId }, select: { nome: true, email: true } })
-        : null;
-      await this.prisma.logAuditoria.create({
-        data: {
-          usuarioId: evento.usuarioId,
-          usuarioNome: usuario?.nome,
-          usuarioEmail: usuario?.email,
-          acao: evento.acao,
-          modulo: evento.modulo,
-          recurso: evento.recurso,
-          recursoId: evento.recursoId,
-          descricao: evento.descricao,
-          dadosAntes: this.sanitize(evento.dadosAntes) as any,
-          dadosDepois: this.sanitize(evento.dadosDepois) as any,
-          ip: evento.ip,
-          userAgent: evento.userAgent,
-          sucesso: evento.sucesso ?? true,
-          erro: evento.erro,
-          requestId: evento.requestId,
-        },
-      });
+      const persist = async (client: AuditTransaction) => {
+        await client.logAuditoria.create({
+          data: {
+            usuarioId: evento.usuarioId,
+            usuarioNome: evento.usuarioId ? `Conta ${evento.usuarioId.slice(0, 8)}` : 'Sistema',
+            acao: evento.acao,
+            modulo: evento.modulo,
+            recurso: evento.recurso,
+            recursoId: evento.recursoId,
+            descricao: evento.descricao,
+            dadosAntes: this.sanitize(evento.dadosAntes) as any,
+            dadosDepois: this.sanitize(evento.dadosDepois) as any,
+            ip: evento.ip ? this.hashAuditValue(evento.ip) : undefined,
+            userAgent: undefined,
+            sucesso: evento.sucesso ?? true,
+            erro: evento.erro,
+            requestId: evento.requestId,
+          },
+        });
+      };
+
+      if (transaction) await persist(transaction);
+      else await this.prisma.$transaction(persist);
     } catch (error) {
       this.logger.error('Não foi possível registrar auditoria.', error instanceof Error ? error.stack : undefined);
+      throw new InternalServerErrorException('Não foi possível persistir o registro de auditoria.');
     }
+  }
+
+  async verificarIntegridade() {
+    const [resultado] = await this.prisma.$queryRaw<Array<{ valido: boolean; total: bigint; sequenciaErro: bigint | null }>>`
+      SELECT * FROM "logs_auditoria_verificar_integridade"()
+    `;
+    return {
+      valido: resultado.valido,
+      total: resultado.total.toString(),
+      sequenciaErro: resultado.sequenciaErro?.toString() ?? null,
+    };
   }
 
   async listar(query: AuditoriaQueryDto, maxLimit = 100) {
@@ -84,7 +102,10 @@ export class AuditoriaService {
       this.prisma.logAuditoria.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
       this.prisma.logAuditoria.count({ where }),
     ]);
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return {
+      data: data.map((item) => ({ ...item, sequencia: item.sequencia.toString() })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async opcoes() {
@@ -109,18 +130,22 @@ export class AuditoriaService {
   async detalhar(id: string) {
     const item = await this.prisma.logAuditoria.findUnique({ where: { id } });
     if (!item) throw new NotFoundException('Registro de auditoria não encontrado');
-    return item;
+    return { ...item, sequencia: item.sequencia.toString() };
   }
 
   async exportar(query: AuditoriaQueryDto, formato: 'PDF' | 'CSV') {
     const result = await this.listar({ ...query, page: '1', limit: '10000' }, 10000);
     const rows = result.data.map((item) => [
-      item.createdAt.toISOString(), item.usuarioNome || 'Sistema', item.usuarioEmail || '', item.acao,
+      item.sequencia, item.previousHash, item.eventHash, item.createdAt.toISOString(), item.usuarioNome || 'Sistema', item.usuarioEmail || '', item.acao,
       this.rotuloModulo(item.modulo), item.recurso || '', item.recursoId || '', item.descricao, item.ip || '', item.sucesso ? 'Sucesso' : 'Falha',
     ]);
-    const headers = ['Data', 'Usuário', 'E-mail', 'Ação', 'Módulo', 'Recurso', 'ID', 'Descrição', 'IP', 'Status'];
+    const headers = ['Sequência', 'Hash anterior', 'Hash do evento', 'Data', 'Usuário', 'E-mail', 'Ação', 'Módulo', 'Recurso', 'ID', 'Descrição', 'IP', 'Status'];
     if (formato === 'CSV') {
-      const csv = [headers, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(';')).join('\n');
+      const csv = [headers, ...rows].map((row) => row.map((value) => {
+        const text = String(value);
+        const safe = /^[\u0000-\u0020]*[=+\-@]/.test(text) ? `'${text}` : text;
+        return `"${safe.replaceAll('"', '""')}"`;
+      }).join(';')).join('\n');
       return { buffer: Buffer.from(`\ufeff${csv}`, 'utf8'), contentType: 'text/csv; charset=utf-8', filename: 'historico-auditoria.csv' };
     }
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -130,9 +155,9 @@ export class AuditoriaService {
       content: [
         { text: 'Histórico de auditoria', style: 'header' },
         { text: `Registros: ${rows.length}`, margin: [0, 0, 0, 12] },
-        { table: { headerRows: 1, widths: ['auto', '*', '*', '*', '*', '*'], body: [
-          ['Data', 'Usuário', 'Ação', 'Módulo', 'Descrição', 'Status'],
-          ...rows.map((row) => [new Date(row[0]).toLocaleString('pt-BR'), row[1], row[3], row[4], row[7], row[9]]),
+        { table: { headerRows: 1, widths: ['auto', '*', 'auto', '*', '*', '*', 'auto'], body: [
+          ['Seq.', 'Hash do evento', 'Data', 'Usuário', 'Ação', 'Descrição', 'Status'],
+          ...rows.map((row) => [row[0], row[2], new Date(row[3]).toLocaleString('pt-BR'), row[4], row[6], row[10], row[12]]),
         ] } },
       ],
       styles: { header: { fontSize: 16, bold: true, margin: [0, 0, 0, 8] } },
@@ -146,6 +171,11 @@ export class AuditoriaService {
       pdf.on('error', reject);
       pdf.end();
     });
+  }
+
+  private hashAuditValue(value: string) {
+    const secret = process.env.AUDIT_IDENTIFIER_SECRET || process.env.JWT_SECRET || 'development-only-audit-key';
+    return createHmac('sha256', secret).update(value).digest('hex');
   }
 
   private sanitize(value: unknown): unknown {

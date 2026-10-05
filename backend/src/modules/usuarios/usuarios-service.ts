@@ -76,7 +76,7 @@ export class UsuariosService {
 
     const existingUser = await this.prisma.usuario.findFirst({
       where: {
-        OR: [{ email: createUsuarioDto.email }, { cpf }],
+        OR: [{ email: createUsuarioDto.email.trim().toLowerCase() }, { cpf }],
       },
     });
 
@@ -84,31 +84,34 @@ export class UsuariosService {
       throw new ConflictException('Email ou CPF já cadastrado');
     }
 
-    const hashedPassword = await bcrypt.hash(createUsuarioDto.senha, 10);
+    const hashedPassword = await bcrypt.hash(createUsuarioDto.senha, 12);
 
-    const usuario = await this.prisma.usuario.create({
-      data: {
-        ...createUsuarioDto,
-        cpf,
-        telefone,
-        senha: hashedPassword,
-      },
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        cpf: true,
-        role: true,
-        ativo: true,
-        telefone: true,
-        cargo: true,
-        unidadeId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.create({
+        data: {
+          ...createUsuarioDto,
+          email: createUsuarioDto.email.trim().toLowerCase(),
+          cpf,
+          telefone,
+          senha: hashedPassword,
+        },
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          cpf: true,
+          role: true,
+          ativo: true,
+          telefone: true,
+          cargo: true,
+          unidadeId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_CRIADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: usuario.id, descricao: 'Usuário criado pelo administrador', dadosDepois: usuario }, tx);
+      return usuario;
     });
-    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_CRIADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: usuario.id, descricao: 'Usuário criado pelo administrador', dadosDepois: usuario });
-    return usuario;
   }
 
   async update(id: string, updateUsuarioDto: UpdateUsuarioDto, atorId?: string, requestId?: string) {
@@ -117,6 +120,7 @@ export class UsuariosService {
     if (updateUsuarioDto.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN só pode ser definido pelo bootstrap administrativo.');
 
     const data: any = { ...updateUsuarioDto };
+    if (updateUsuarioDto.email !== undefined) data.email = updateUsuarioDto.email.trim().toLowerCase();
     if (updateUsuarioDto.cpf !== undefined) {
       data.cpf = normalizarCpf(updateUsuarioDto.cpf);
       if (!cpfValido(data.cpf)) throw new BadRequestException('CPF inválido');
@@ -126,56 +130,57 @@ export class UsuariosService {
       if (data.telefone && !telefoneValido(data.telefone)) throw new BadRequestException('Telefone inválido');
     }
     if (updateUsuarioDto.senha) {
-      data.senha = await bcrypt.hash(updateUsuarioDto.senha, 10);
+      data.senha = await bcrypt.hash(updateUsuarioDto.senha, 12);
       data.tokenVersion = { increment: 1 };
     }
     if (updateUsuarioDto.role && updateUsuarioDto.role !== currentUser.role) {
       data.tokenVersion = { increment: 1 };
     }
 
-    const usuario = await this.prisma.usuario.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        cpf: true,
-        role: true,
-        ativo: true,
-        telefone: true,
-        cargo: true,
-        unidadeId: true,
-        updatedAt: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.update({
+        where: { id },
+        data,
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          cpf: true,
+          role: true,
+          ativo: true,
+          telefone: true,
+          cargo: true,
+          unidadeId: true,
+          updatedAt: true,
+        },
+      });
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_ATUALIZADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Usuário atualizado pelo administrador', dadosAntes: currentUser, dadosDepois: usuario }, tx);
+      return usuario;
     });
-    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_ATUALIZADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Usuário atualizado pelo administrador', dadosAntes: currentUser, dadosDepois: usuario });
-    return usuario;
   }
 
   async toggleStatus(id: string, ativo: boolean, atorId?: string, requestId?: string) {
     const currentUser = await this.findOne(id);
     if (currentUser.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN não pode ser desativado.');
 
-    const usuario = await this.prisma.usuario.update({
-      where: { id },
-      data: { ativo, tokenVersion: { increment: 1 } },
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        ativo: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.update({
+        where: { id },
+        data: { ativo, tokenVersion: { increment: 1 } },
+        select: { id: true, nome: true, email: true, ativo: true },
+      });
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: ativo ? 'USUARIO_APROVADO' : 'USUARIO_DESATIVADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: ativo ? 'Cadastro de usuário aprovado' : 'Usuário desativado', dadosAntes: currentUser, dadosDepois: usuario }, tx);
+      return usuario;
     });
-    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: ativo ? 'USUARIO_APROVADO' : 'USUARIO_DESATIVADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: ativo ? 'Cadastro de usuário aprovado' : 'Usuário desativado', dadosAntes: currentUser, dadosDepois: usuario });
-    return usuario;
   }
 
   async remove(id: string, atorId?: string, requestId?: string) {
     const currentUser = await this.findOne(id);
     if (currentUser.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN não pode ser removido.');
-    const usuario = await this.prisma.usuario.delete({ where: { id } });
-    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_REMOVIDO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Usuário removido pelo administrador', dadosAntes: currentUser });
-    return usuario;
+    return this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.delete({ where: { id } });
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_REMOVIDO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Usuário removido pelo administrador', dadosAntes: currentUser }, tx);
+      return usuario;
+    });
   }
 }

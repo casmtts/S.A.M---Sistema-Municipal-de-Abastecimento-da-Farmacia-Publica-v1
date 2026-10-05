@@ -1,5 +1,5 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
-import { catchError, tap, throwError } from 'rxjs';
+import { catchError, concatMap, from, map, mergeMap, throwError } from 'rxjs';
 import { AuditoriaService } from '../../modules/auditoria/auditoria.service';
 
 @Injectable()
@@ -10,13 +10,16 @@ export class AuditInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const path = String(request.originalUrl || request.url || '');
     const method = String(request.method || 'GET');
-    if (path.startsWith('/auth') || path.startsWith('/auditoria') || path.startsWith('/permissoes') || path.startsWith('/usuarios') || method === 'GET' && !path.includes('/exportar')) return next.handle();
+    if (path.startsWith('/auth') || path.startsWith('/auditoria') || path.startsWith('/permissoes') || path.startsWith('/usuarios') || path.startsWith('/privacidade') || method === 'GET' && !path.includes('/exportar')) return next.handle();
     const { modulo, recurso } = this.resourceFromPath(path);
     const acao = this.actionFromRequest(method, path);
     const evento = { usuarioId: request.user?.id, requestId: request.requestId, acao, modulo, recurso, recursoId: request.params?.id, descricao: `${acao} em ${recurso || modulo}`, dadosDepois: method === 'POST' || method === 'PATCH' ? request.body : undefined, ip: request.ip, userAgent: request.get('user-agent') };
     return next.handle().pipe(
-      tap(() => { void this.auditoria.registrar(evento); }),
-      catchError((error) => { void this.auditoria.registrar({ ...evento, sucesso: false, erro: 'Falha na operação' }); return throwError(() => error); }),
+      concatMap((response) => from(this.auditoria.registrar(evento)).pipe(map(() => response))),
+      catchError((error) => from(this.auditoria.registrar({ ...evento, sucesso: false, erro: 'Falha na operação' })).pipe(
+        mergeMap(() => throwError(() => error)),
+        catchError((auditError) => throwError(() => auditError)),
+      )),
     );
   }
 

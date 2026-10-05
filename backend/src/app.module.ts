@@ -18,6 +18,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 import { HealthModule } from './health/health.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
+import { PrivacidadeModule } from './modules/privacidade/privacidade.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -40,6 +41,7 @@ import { validateEnv } from './config/env.validation';
     PermissoesModule,
     AuditoriaModule,
     HealthModule,
+    PrivacidadeModule,
   ],
   providers: [
     {

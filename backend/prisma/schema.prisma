@@ -51,7 +51,7 @@ model Usuario {
   nome         String
   email        String    @unique
   cpf          String    @unique
-  senha        String
+  senha        String    @db.VarChar(255)
   role         UserRole  @default(ATENDENTE)
   ativo        Boolean   @default(true)
   tokenVersion Int       @default(0)
@@ -63,13 +63,43 @@ model Usuario {
   updatedAt    DateTime  @updatedAt
 
   // Relações
-  movimentacoes      Movimentacao[]
-  pedidosSolicitados Pedido[]           @relation("PedidoSolicitante")
-  pedidosAprovados   Pedido[]           @relation("PedidoAprovador")
-  permissoes         PermissaoUsuario[]
-  logsAuditoria      LogAuditoria[]
+  movimentacoes           Movimentacao[]
+  pedidosSolicitados      Pedido[]                 @relation("PedidoSolicitante")
+  pedidosAprovados        Pedido[]                 @relation("PedidoAprovador")
+  permissoes              PermissaoUsuario[]
+  solicitacoesPrivacidade SolicitacaoPrivacidade[]
 
   @@map("usuarios")
+}
+
+enum TipoSolicitacaoPrivacidade {
+  ACESSO
+  CORRECAO
+  ELIMINACAO
+}
+
+enum StatusSolicitacaoPrivacidade {
+  ABERTA
+  EM_ANALISE
+  CONCLUIDA
+  RECUSADA
+}
+
+model SolicitacaoPrivacidade {
+  id          String                       @id @default(uuid())
+  usuarioId   String
+  tipo        TipoSolicitacaoPrivacidade
+  descricao   String?                      @db.VarChar(1000)
+  status      StatusSolicitacaoPrivacidade @default(ABERTA)
+  resposta    String?                      @db.VarChar(2000)
+  atendidaPor String?
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+  usuario     Usuario                      @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([usuarioId, createdAt])
+  @@index([status, createdAt])
+  @@map("solicitacoes_privacidade")
 }
 
 model Permissao {
@@ -111,6 +141,9 @@ model PermissaoUsuario {
 
 model LogAuditoria {
   id           String   @id @default(uuid())
+  sequencia    BigInt   @unique @default(0)
+  previousHash String   @default("")
+  eventHash    String   @unique @default("")
   usuarioId    String?
   usuarioNome  String?
   usuarioEmail String?
@@ -127,7 +160,6 @@ model LogAuditoria {
   erro         String?
   requestId    String?
   createdAt    DateTime @default(now())
-  usuario      Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([usuarioId, createdAt])
   @@index([acao, createdAt])

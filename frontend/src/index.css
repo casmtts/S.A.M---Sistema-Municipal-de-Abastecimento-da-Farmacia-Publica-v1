@@ -14,8 +14,9 @@ body,
 body {
   margin: 0;
   font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f6f9ff;
-  color: #0f172a;
+  background-color: #f5f8fc;
+  color: #0b1c30;
+  font-feature-settings: 'tnum' 1;
 }
 
 button { font-family: inherit; }

@@ -34,6 +34,8 @@ export class HttpErrorFilter implements ExceptionFilter {
         return 'O recurso solicitado não foi encontrado.';
       case HttpStatus.CONFLICT:
         return 'Já existe um cadastro com esses dados.';
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return 'Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar novamente.';
       default:
         return 'Não foi possível concluir a operação agora. Tente novamente mais tarde.';
     }

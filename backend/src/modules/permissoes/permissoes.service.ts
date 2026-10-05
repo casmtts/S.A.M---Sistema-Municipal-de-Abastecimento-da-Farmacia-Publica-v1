@@ -6,7 +6,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { DEFAULT_ROLE_PERMISSIONS, PERMISSION_CATALOG } from './permissoes.catalogo';
 import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
@@ -77,8 +77,10 @@ export class PermissoesService implements OnModuleInit {
 
   async atualizarPapel(role: UserRole, dto: UpdateRolePermissionsDto, atorId?: string, requestId?: string) {
     if (role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN) throw new BadRequestException('As permissões administrativas são fixas.');
-    await this.atualizarValores(dto.permissoes, { role });
-    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'PERMISSOES_PAPEL_ATUALIZADAS', modulo: 'permissoes', recurso: 'Papel', recursoId: role, descricao: `Permissões do papel ${role} atualizadas`, dadosDepois: dto.permissoes });
+    await this.prisma.$transaction(async (tx) => {
+      await this.atualizarValores(dto.permissoes, { role }, tx);
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'PERMISSOES_PAPEL_ATUALIZADAS', modulo: 'permissoes', recurso: 'Papel', recursoId: role, descricao: `Permissões do papel ${role} atualizadas`, dadosDepois: dto.permissoes }, tx);
+    });
     return this.papeis();
   }
 
@@ -111,8 +113,8 @@ export class PermissoesService implements OnModuleInit {
           create: { usuarioId, permissaoId: permission.id, permitido: value.permitido },
         });
       }
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'PERMISSOES_USUARIO_ATUALIZADAS', modulo: 'permissoes', recurso: 'Usuario', recursoId: usuarioId, descricao: 'Exceções de permissões atualizadas', dadosDepois: dto.permissoes }, tx);
     });
-    await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'PERMISSOES_USUARIO_ATUALIZADAS', modulo: 'permissoes', recurso: 'Usuario', recursoId: usuarioId, descricao: 'Exceções de permissões atualizadas', dadosDepois: dto.permissoes });
     return this.usuario(usuarioId);
   }
 
@@ -122,11 +124,11 @@ export class PermissoesService implements OnModuleInit {
     return result.filter(({ permitido }) => permitido).map(({ chave }) => chave);
   }
 
-  private async atualizarValores(values: { chave: string; permitido: boolean }[], where: { role: UserRole }) {
+  private async atualizarValores(values: { chave: string; permitido: boolean }[], where: { role: UserRole }, tx: Prisma.TransactionClient) {
     for (const value of values) {
-      const permission = await this.prisma.permissao.findUnique({ where: { chave: value.chave } });
+      const permission = await tx.permissao.findUnique({ where: { chave: value.chave } });
       if (!permission) throw new BadRequestException(`Permissão inválida: ${value.chave}`);
-      await this.prisma.permissaoPapel.upsert({
+      await tx.permissaoPapel.upsert({
         where: { permissaoId_role: { permissaoId: permission.id, role: where.role } },
         update: { permitido: value.permitido },
         create: { permissaoId: permission.id, role: where.role, permitido: value.permitido },

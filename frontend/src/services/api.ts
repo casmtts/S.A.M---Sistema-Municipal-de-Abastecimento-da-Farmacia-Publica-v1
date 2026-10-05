@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+// In local development keep the same hostname as the UI. Cookies are scoped by
+// hostname, so `127.0.0.1` and `localhost` cannot share the HttpOnly session.
+const localApiUrl = typeof window === 'undefined'
+  ? 'http://localhost:3001'
+  : `http://${window.location.hostname}:3001`;
+const apiUrl = new URL(import.meta.env.VITE_API_URL || localApiUrl);
+const localHosts = ['localhost', '127.0.0.1'];
+if (typeof window !== 'undefined' && localHosts.includes(window.location.hostname) && localHosts.includes(apiUrl.hostname)) {
+  apiUrl.hostname = window.location.hostname;
+}
+const API_URL = apiUrl.toString().replace(/\/$/, '');
 
 const api = axios.create({
   baseURL: API_URL,
@@ -8,10 +18,11 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000,
+  withCredentials: true,
 });
 
 export const getApiErrorMessage = (error: unknown, fallback = 'Não foi possível concluir a operação. Tente novamente.') => {
-  if (!axios.isAxiosError(error)) return fallback;
+  if (!axios.isAxiosError(error)) return error instanceof Error ? error.message : fallback;
 
   const status = error.response?.status;
   if (!error.response) return 'Não foi possível conectar ao servidor. Tente novamente.';
@@ -28,6 +39,8 @@ export const getApiErrorMessage = (error: unknown, fallback = 'Não foi possíve
       return 'O recurso solicitado não foi encontrado.';
     case 409:
       return 'Já existe um cadastro com esses dados.';
+    case 429:
+      return 'Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.';
     case 500:
     case 502:
     case 503:
@@ -37,25 +50,12 @@ export const getApiErrorMessage = (error: unknown, fallback = 'Não foi possíve
   }
 };
 
-// Interceptor para adicionar token
-api.interceptors.request.use(
-  (config) => {
-    const token = sessionStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 // Interceptor para tratar erros
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
+      window.dispatchEvent(new Event('sam:unauthorized'));
     }
     return Promise.reject(error);
   }

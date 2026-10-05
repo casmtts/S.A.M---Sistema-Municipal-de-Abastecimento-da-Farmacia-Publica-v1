@@ -27,18 +27,24 @@ export class AuditoriaController {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
     };
+    let file: Awaited<ReturnType<AuditoriaService['exportar']>>;
     try {
-      const file = await this.service.exportar(query, formato === AuditoriaFormato.CSV ? 'CSV' : 'PDF');
-      void this.service.registrar(auditEvent);
-      res.setHeader('Content-Type', file.contentType);
-      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
-      res.setHeader('Content-Length', file.buffer.length);
-      res.send(file.buffer);
+      file = await this.service.exportar(query, formato === AuditoriaFormato.CSV ? 'CSV' : 'PDF');
     } catch (error) {
-      void this.service.registrar({ ...auditEvent, sucesso: false, erro: 'Falha na exportação' });
+      await this.service.registrar({ ...auditEvent, sucesso: false, erro: 'Falha na exportação' });
       throw error;
     }
+    await this.service.registrar(auditEvent);
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    res.setHeader('Content-Length', file.buffer.length);
+    res.send(file.buffer);
   }
+
+  @Get('integridade')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Permissions('auditoria.visualizar')
+  verificarIntegridade() { return this.service.verificarIntegridade(); }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)

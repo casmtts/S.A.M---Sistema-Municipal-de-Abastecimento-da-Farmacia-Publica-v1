@@ -5,13 +5,19 @@ export function validateEnv(config: Record<string, any>) {
   if (!databaseUrl || jwtSecret.length < 32 || corsOrigins.length === 0) {
     throw new Error('DATABASE_URL, JWT_SECRET e CORS_ORIGINS são obrigatórios.');
   }
+  const auditIdentifierSecret = String(config.AUDIT_IDENTIFIER_SECRET || '');
+  if (config.NODE_ENV === 'production' && auditIdentifierSecret.length < 32) {
+    throw new Error('AUDIT_IDENTIFIER_SECRET deve ter pelo menos 32 caracteres em produção.');
+  }
   if (config.NODE_ENV === 'production' && /change|troque|local|development/i.test(jwtSecret)) {
     throw new Error('JWT_SECRET de produção inválido.');
   }
   return {
     ...config,
     PORT: Number(config.PORT || 3001),
+    NODE_ENV: String(config.NODE_ENV || 'development'),
     JWT_EXPIRES_IN: config.JWT_EXPIRES_IN || '15m',
+    AUDIT_IDENTIFIER_SECRET: auditIdentifierSecret,
     CORS_ORIGINS: corsOrigins,
   };
 }

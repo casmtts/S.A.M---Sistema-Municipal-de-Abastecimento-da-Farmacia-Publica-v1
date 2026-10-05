@@ -69,3 +69,19 @@ npm run preview
 - `src/App.css`: layout responsivo e estilos da interface.
 
 Para a arquitetura completa, Docker, banco e endpoints, consulte o [README da raiz](../README.md) e o [README do backend](../backend/README.md).
+
+## Testes automatizados
+
+Instale o Chromium do Playwright uma vez por máquina:
+
+```bash
+npx playwright install chromium
+```
+
+Execute testes unitários com Vitest e React Testing Library, seguidos dos testes de integração do navegador:
+
+```bash
+npm test
+```
+
+Também é possível executar cada etapa separadamente com `npm run test:unit` e `npm run test:e2e`. Os testes Playwright iniciam um Vite temporário e simulam as respostas da API; não precisam de banco nem alteram dados da aplicação.

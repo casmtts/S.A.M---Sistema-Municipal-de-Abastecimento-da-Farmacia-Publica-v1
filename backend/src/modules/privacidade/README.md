@@ -1,0 +1,9 @@
+# Privacidade e LGPD
+
+O módulo fornece canal autenticado para pedidos de acesso, correção e eliminação, exportação de dados operacionais associados à própria conta, fila administrativa e pseudonimização após análise. A eliminação não ocorre automaticamente porque pedidos, movimentações e documentos públicos podem ter obrigações de guarda próprias.
+
+Antes da produção, o controlador deve aprovar finalidade e base legal por fluxo, aviso de privacidade, canal do encarregado, matriz de retenção e descarte de dados e backups, controles de acesso, registro das operações, processo de direitos dos titulares, treinamento e plano de resposta a incidentes. A administração municipal deve aplicar a tabela de temporalidade e o processo arquivístico pertinente às suas próprias classes documentais.
+
+Segundo a Resolução CD/ANPD nº 15/2024, incidentes que possam causar risco ou dano relevante devem ser comunicados à ANPD e aos titulares em até três dias úteis, e o registro do incidente deve ser guardado por pelo menos cinco anos. Fontes: [Resolução/Regulamento e orientação da ANPD](https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/comunicado-de-incidente-de-seguranca-cis), [LGPD, art. 18](https://planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm), [orientação do Arquivo Nacional sobre eliminação documental](https://www.gov.br/arquivonacional/pt-br/servicos/gestao-de-documentos/orientacao-tecnica-1/eliminacao-de-documentos).
+
+A pseudonimização substitui dados cadastrais diretos e nomes de responsáveis por identificadores técnicos, além de invalidar sessões. Como as chaves de vínculo histórico permanecem, isso não deve ser apresentado como anonimização irreversível. Não apaga backups, exportações já baixadas, caches externos ou cópias de terceiros. Uma decisão de eliminação deve avaliar todas essas cópias e documentar retenções legais.

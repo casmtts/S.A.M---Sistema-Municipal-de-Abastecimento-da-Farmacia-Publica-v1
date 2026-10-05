@@ -144,6 +144,7 @@ O frontend usa `VITE_API_URL` para localizar a API. Por padrão, ele aponta para
 - `GET /permissoes/minhas` — permissões efetivas do usuário autenticado.
 - `GET /permissoes/papeis` e `PUT /permissoes/papeis/:role` — matriz de permissões por papel.
 - `GET /auditoria` e `GET /auditoria/exportar` — histórico administrativo e exportações PDF/CSV.
+- `GET /auditoria/integridade` — valida a cadeia append-only de hashes do histórico, restrita a `ADMIN` e `SUPER_ADMIN`.
 - `GET /auditoria/opcoes` — opções dinâmicas de ação, módulo, recurso, usuário e status para os filtros do histórico.
 - `POST /relatorios/exportar` — exportação de relatórios.
 
@@ -154,3 +155,7 @@ O frontend usa `VITE_API_URL` para localizar a API. Por padrão, ele aponta para
 - NestJS + Prisma
 - PostgreSQL
 - Docker Compose
+
+## Privacidade e proteção de dados
+
+A aplicação inclui sessão em cookie `HttpOnly`, exportação dos dados da própria conta, registro de solicitações de acesso/correção/eliminação e fluxo administrativo de análise e pseudonimização. Veja [documentação de privacidade do backend](backend/src/modules/privacidade/README.md) e os controles operacionais em [backend/README.md](backend/README.md). A implantação exige definição municipal de base legal, encarregado, retenção arquivística e resposta a incidentes.
