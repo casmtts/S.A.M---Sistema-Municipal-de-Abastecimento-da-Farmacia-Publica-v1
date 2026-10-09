@@ -1,0 +1,1 @@
+ALTER TABLE "medicamentos" ADD COLUMN "ativo" BOOLEAN NOT NULL DEFAULT true;

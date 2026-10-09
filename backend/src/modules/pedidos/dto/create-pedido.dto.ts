@@ -1,6 +1,7 @@
 import {
   IsString,
   IsNumber,
+  IsInt,
   IsUUID,
   IsOptional,
   Min,
@@ -17,6 +18,7 @@ export class CreatePedidoDto {
   medicamentoId: string;
 
   @IsNumber()
+  @IsInt()
   @Min(1)
   @Max(100000000)
   quantidadeSolicitada: number;

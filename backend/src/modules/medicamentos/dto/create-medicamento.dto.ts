@@ -1,6 +1,7 @@
 import {
   IsString,
   IsNumber,
+  IsInt,
   IsDate,
   IsOptional,
   Min,
@@ -37,26 +38,29 @@ export class CreateMedicamentoDto {
   @MaxLength(80)
   codigoBarras?: string;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(80)
-  lote?: string;
+  lote: string;
 
   @Type(() => Date)
   @IsDate()
   validade: Date;
 
   @IsNumber()
+  @IsInt()
   @Min(0)
   @Max(100000000)
   quantidadeAtual: number;
 
   @IsNumber()
+  @IsInt()
   @Min(0)
   @Max(100000000)
   quantidadeMinima: number;
 
   @IsNumber()
+  @IsInt()
   @Min(0)
   @Max(100000000)
   quantidadeMaxima: number;

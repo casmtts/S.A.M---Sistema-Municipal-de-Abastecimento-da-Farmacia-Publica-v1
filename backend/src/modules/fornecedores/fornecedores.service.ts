@@ -148,21 +148,9 @@ export class FornecedoresService {
    * Remover fornecedor
    */
   async remove(id: string) {
-    await this.findOne(id);
-
-    // Verificar se o fornecedor tem medicamentos vinculados
-    const fornecedor = await this.prisma.fornecedor.findUnique({
-      where: { id },
-      include: { medicamentos: true },
-    });
-
-    if (fornecedor?.medicamentos.length > 0) {
-      throw new ConflictException(
-        `Não é possível excluir o fornecedor pois existem ${fornecedor.medicamentos.length} medicamentos vinculados a ele`,
-      );
-    }
-
-    return this.prisma.fornecedor.delete({ where: { id } });
+    const fornecedor = await this.findOne(id);
+    if (!fornecedor.ativo) throw new ConflictException('O fornecedor já está inativado.');
+    return this.prisma.fornecedor.update({ where: { id }, data: { ativo: false } });
   }
 
   /**

@@ -1,6 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreatePedidoDto } from './create-pedido.dto';
-import { IsEnum, IsOptional, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsDate } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum StatusPedido {
   PENDENTE = 'PENDENTE',
@@ -11,14 +10,8 @@ export enum StatusPedido {
   CANCELADO = 'CANCELADO',
 }
 
-export class UpdatePedidoDto extends PartialType(CreatePedidoDto) {
-  @IsOptional()
-  @IsEnum(StatusPedido)
-  status?: StatusPedido;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100000000)
-  quantidadeEntregue?: number;
+export class UpdatePedidoDto {
+  @IsOptional() @IsString() @MaxLength(1000) justificativa?: string;
+  @IsOptional() @IsString() @MaxLength(2000) observacoes?: string;
+  @IsOptional() @Type(() => Date) @IsDate() dataPrevistaEntrega?: Date;
 }

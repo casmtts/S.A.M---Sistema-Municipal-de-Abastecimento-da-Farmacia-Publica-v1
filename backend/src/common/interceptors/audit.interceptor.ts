@@ -10,10 +10,28 @@ export class AuditInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const path = String(request.originalUrl || request.url || '');
     const method = String(request.method || 'GET');
-    if (path.startsWith('/auth') || path.startsWith('/auditoria') || path.startsWith('/permissoes') || path.startsWith('/usuarios') || path.startsWith('/privacidade') || method === 'GET' && !path.includes('/exportar')) return next.handle();
+    if (path === '/' || path.startsWith('/health') || path.startsWith('/auditoria') || path.startsWith('/permissoes')) return next.handle();
+    // Auth has explicit service-level events (including failed credential attempts).
+    if (path.startsWith('/auth')) return next.handle();
+    // Record reads of business resources as well as mutations. Keep payloads out of
+    // generic audit events: domain services should add vetted snapshots when needed.
     const { modulo, recurso } = this.resourceFromPath(path);
     const acao = this.actionFromRequest(method, path);
-    const evento = { usuarioId: request.user?.id, requestId: request.requestId, acao, modulo, recurso, recursoId: request.params?.id, descricao: `${acao} em ${recurso || modulo}`, dadosDepois: method === 'POST' || method === 'PATCH' ? request.body : undefined, ip: request.ip, userAgent: request.get('user-agent') };
+    const fieldNames = method === 'POST' || method === 'PATCH' || method === 'PUT'
+      ? Object.keys(request.body || {}).filter((key) => !/senha|password|token|cookie|secret/i.test(key))
+      : undefined;
+    const evento = {
+      usuarioId: request.user?.id,
+      requestId: request.requestId,
+      acao: method === 'GET' ? 'DADO_CONSULTADO' : acao,
+      modulo,
+      recurso,
+      recursoId: request.params?.id,
+      descricao: method === 'GET' ? `Consulta em ${recurso || modulo}` : `${acao} em ${recurso || modulo}`,
+      dadosDepois: fieldNames?.length ? { campos: fieldNames } : undefined,
+      ip: request.ip,
+      userAgent: request.get('user-agent'),
+    };
     return next.handle().pipe(
       concatMap((response) => from(this.auditoria.registrar(evento)).pipe(map(() => response))),
       catchError((error) => from(this.auditoria.registrar({ ...evento, sucesso: false, erro: 'Falha na operação' })).pipe(

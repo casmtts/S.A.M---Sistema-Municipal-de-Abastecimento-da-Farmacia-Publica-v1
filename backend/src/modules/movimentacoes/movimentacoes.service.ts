@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
@@ -85,6 +86,9 @@ export class MovimentacoesService {
     responsavelId: string,
     responsavelNome: string,
   ) {
+    if (!Number.isSafeInteger(createMovimentacaoDto.quantidade) || createMovimentacaoDto.quantidade <= 0) {
+      throw new BadRequestException('A quantidade deve ser um número inteiro positivo.');
+    }
     const medicamento = await this.prisma.medicamento.findUnique({
       where: { id: createMovimentacaoDto.medicamentoId },
       select: {
@@ -92,65 +96,56 @@ export class MovimentacoesService {
         nome: true,
         quantidadeAtual: true,
         precoUnitario: true,
+        ativo: true,
+        lote: true,
+        validade: true,
       },
     });
 
     if (!medicamento) {
       throw new NotFoundException('Medicamento não encontrado');
     }
+    if (!medicamento.ativo) throw new ConflictException('Não é permitido movimentar um medicamento inativado.');
+    if (createMovimentacaoDto.tipo === TipoMovimentacao.DISPENSA) {
+      throw new BadRequestException('Dispensações exigem um fluxo clínico vinculado a paciente e prescrição; não podem ser registradas como saída genérica.');
+    }
 
     // Validar estoque para saídas
-    if (createMovimentacaoDto.tipo !== TipoMovimentacao.ENTRADA) {
-      if (createMovimentacaoDto.quantidade > medicamento.quantidadeAtual) {
-        throw new BadRequestException(
-          `Estoque insuficiente. Disponível: ${medicamento.quantidadeAtual} unidades`,
-        );
+    return this.prisma.$transaction(async (tx) => {
+      const delta = createMovimentacaoDto.tipo === TipoMovimentacao.ENTRADA
+        ? createMovimentacaoDto.quantidade
+        : -createMovimentacaoDto.quantidade;
+      const alterado = await tx.medicamento.updateMany({
+        where: {
+          id: medicamento.id,
+          ativo: true,
+          ...(delta < 0 ? { quantidadeAtual: { gte: createMovimentacaoDto.quantidade } } : {}),
+        },
+        data: { quantidadeAtual: { increment: delta } },
+      });
+      if (!alterado.count) {
+        throw new ConflictException('Estoque insuficiente ou alterado por outra operação. Atualize o saldo e tente novamente.');
       }
-    }
-
-    // Atualizar estoque
-    let novaQuantidade = medicamento.quantidadeAtual;
-    if (createMovimentacaoDto.tipo === TipoMovimentacao.ENTRADA) {
-      novaQuantidade += createMovimentacaoDto.quantidade;
-    } else {
-      novaQuantidade -= createMovimentacaoDto.quantidade;
-    }
-
-    await this.prisma.medicamento.update({
-      where: { id: createMovimentacaoDto.medicamentoId },
-      data: { quantidadeAtual: novaQuantidade },
-    });
-
-    // Registrar movimentação
-    return this.prisma.movimentacao.create({
-      data: {
-        medicamentoId: createMovimentacaoDto.medicamentoId,
-        medicamentoNome: medicamento.nome,
-        tipo: createMovimentacaoDto.tipo,
-        quantidade: createMovimentacaoDto.quantidade,
-        responsavelId,
-        responsavelNome,
-        documentoReferencia: createMovimentacaoDto.documentoReferencia,
-        observacao: createMovimentacaoDto.observacao,
-        unidadeOrigemId: createMovimentacaoDto.unidadeOrigemId,
-        unidadeDestinoId: createMovimentacaoDto.unidadeDestinoId,
-      },
-      include: {
-        medicamento: {
-          select: {
-            id: true,
-            nome: true,
-            principioAtivo: true,
-          },
+      return tx.movimentacao.create({
+        data: {
+          medicamentoId: createMovimentacaoDto.medicamentoId,
+          medicamentoNome: medicamento.nome,
+          lote: medicamento.lote,
+          validade: medicamento.validade,
+          tipo: createMovimentacaoDto.tipo,
+          quantidade: createMovimentacaoDto.quantidade,
+          responsavelId,
+          responsavelNome,
+          documentoReferencia: createMovimentacaoDto.documentoReferencia,
+          observacao: createMovimentacaoDto.observacao,
+          unidadeOrigemId: createMovimentacaoDto.unidadeOrigemId,
+          unidadeDestinoId: createMovimentacaoDto.unidadeDestinoId,
         },
-        responsavel: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-          },
+        include: {
+          medicamento: { select: { id: true, nome: true, principioAtivo: true } },
+          responsavel: { select: { id: true, nome: true, email: true } },
         },
-      },
+      });
     });
   }
 
@@ -344,6 +339,6 @@ export class MovimentacoesService {
    */
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.movimentacao.delete({ where: { id } });
+    throw new ConflictException('Movimentações de estoque são registros históricos e não podem ser excluídas. Registre uma movimentação compensatória.');
   }
 }

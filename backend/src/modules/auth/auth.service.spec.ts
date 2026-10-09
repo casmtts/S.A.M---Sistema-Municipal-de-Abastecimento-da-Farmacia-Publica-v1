@@ -66,16 +66,16 @@ describe('AuthService session lifecycle', () => {
 
   it('só restaura sessão ativa com a mesma versão de token', async () => {
     const jwt = { verifyAsync: jest.fn().mockResolvedValue({ sub: 'user-1', tokenVersion: 3 }) };
-    const usuario = { id: 'user-1', nome: 'Operador', email: 'operador@example.gov', role: 'ATENDENTE', ativo: true, tokenVersion: 3 };
+    const usuario = { id: 'user-1', nome: 'Operador', email: 'operador@example.gov', role: 'ATENDENTE', cargo: 'Atendente de Farmácia', ativo: true, tokenVersion: 3 };
     const prisma = { usuario: { findUnique: jest.fn().mockResolvedValue(usuario) } };
     const service = new AuthService(prisma as any, jwt as any, {} as any);
 
     await expect(service.obterSessao('valid-cookie')).resolves.toEqual({
-      usuario: { id: 'user-1', nome: 'Operador', email: 'operador@example.gov', role: 'ATENDENTE' },
+      usuario: { id: 'user-1', nome: 'Operador', email: 'operador@example.gov', role: 'ATENDENTE', cargo: 'Atendente de Farmácia' },
     });
     expect(prisma.usuario.findUnique).toHaveBeenCalledWith({
       where: { id: 'user-1' },
-      select: { id: true, nome: true, email: true, role: true, ativo: true, tokenVersion: true },
+      select: { id: true, nome: true, email: true, role: true, cargo: true, ativo: true, tokenVersion: true },
     });
   });
 

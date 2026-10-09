@@ -1,6 +1,7 @@
 import {
   IsString,
   IsNumber,
+  IsInt,
   IsEnum,
   IsOptional,
   IsUUID,
@@ -25,14 +26,15 @@ export class CreateMovimentacaoDto {
   tipo: TipoMovimentacao;
 
   @IsNumber()
+  @IsInt()
   @Min(1)
   @Max(100000000)
   quantidade: number;
 
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(100)
-  documentoReferencia?: string;
+  documentoReferencia: string;
 
   @IsOptional()
   @IsString()

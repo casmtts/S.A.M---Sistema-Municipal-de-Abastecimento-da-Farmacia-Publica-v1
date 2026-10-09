@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { CreatePrivacyRequestDto } from './dto/create-privacy-request.dto';
@@ -28,6 +28,12 @@ export class PrivacidadeService {
     return this.prisma.$transaction(async (tx) => {
       const anterior = await tx.solicitacaoPrivacidade.findUnique({ where: { id } });
       if (!anterior) throw new NotFoundException('Solicitação de privacidade não encontrada.');
+      if (anterior.status === 'CONCLUIDA' || anterior.status === 'RECUSADA') {
+        throw new ConflictException('Esta solicitação já foi encerrada e não pode ser alterada. Abra um novo protocolo se necessário.');
+      }
+      if (dto.status !== 'EM_ANALISE' && anterior.status !== 'EM_ANALISE') {
+        throw new ConflictException('A solicitação precisa estar em análise antes de ser concluída ou recusada.');
+      }
       const atualizada = await tx.solicitacaoPrivacidade.update({ where: { id }, data: { status: dto.status, resposta: dto.resposta?.trim() || null, atendidaPor } });
       await this.auditoria.registrar({ usuarioId: atendidaPor, requestId, acao: 'DIREITO_PRIVACIDADE_ATENDIDO', modulo: 'privacidade', recurso: 'SolicitacaoPrivacidade', recursoId: id, descricao: `Solicitação atualizada para ${dto.status}`, dadosAntes: { tipo: anterior.tipo, status: anterior.status }, dadosDepois: { status: atualizada.status, resposta: atualizada.resposta } }, tx);
       return atualizada;
@@ -64,7 +70,9 @@ export class PrivacidadeService {
         ativo: false,
         tokenVersion: { increment: 1 },
       }, select: { id: true, ativo: true } });
-      await tx.movimentacao.updateMany({ where: { responsavelId: usuarioId }, data: { responsavelNome: `Conta removida ${suffix.slice(0, 8)}` } });
+      // Preserve historical stock records as created; rewriting their actor snapshot
+      // would break the evidentiary ledger. The retained identifier is governed by the
+      // municipality's retention schedule and applicable legal holds.
       await tx.solicitacaoPrivacidade.updateMany({ where: { usuarioId }, data: { descricao: null, resposta: null } });
       await this.auditoria.registrar({ usuarioId: atendidaPor, requestId, acao: 'DADOS_PESSOAIS_PSEUDONIMIZADOS', modulo: 'privacidade', recurso: 'Usuario', recursoId: usuarioId, descricao: 'Dados diretos pseudonimizados após análise de retenção' }, tx);
       return pseudonimizado;

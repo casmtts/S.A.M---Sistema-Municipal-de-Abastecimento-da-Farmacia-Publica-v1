@@ -129,10 +129,6 @@ export class UsuariosService {
       data.telefone = normalizarTelefone(updateUsuarioDto.telefone);
       if (data.telefone && !telefoneValido(data.telefone)) throw new BadRequestException('Telefone inválido');
     }
-    if (updateUsuarioDto.senha) {
-      data.senha = await bcrypt.hash(updateUsuarioDto.senha, 12);
-      data.tokenVersion = { increment: 1 };
-    }
     if (updateUsuarioDto.role && updateUsuarioDto.role !== currentUser.role) {
       data.tokenVersion = { increment: 1 };
     }
@@ -178,8 +174,8 @@ export class UsuariosService {
     const currentUser = await this.findOne(id);
     if (currentUser.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN não pode ser removido.');
     return this.prisma.$transaction(async (tx) => {
-      const usuario = await tx.usuario.delete({ where: { id } });
-      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_REMOVIDO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Usuário removido pelo administrador', dadosAntes: currentUser }, tx);
+      const usuario = await tx.usuario.update({ where: { id }, data: { ativo: false, tokenVersion: { increment: 1 } }, select: { id: true, nome: true, email: true, role: true, ativo: true, updatedAt: true } });
+      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_DESATIVADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Acesso encerrado pelo administrador; histórico preservado', dadosAntes: { ativo: currentUser.ativo }, dadosDepois: { ativo: usuario.ativo } }, tx);
       return usuario;
     });
   }

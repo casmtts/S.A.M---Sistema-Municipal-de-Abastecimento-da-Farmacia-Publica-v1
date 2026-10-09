@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { createHmac } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { LoginDto } from './dto/login-dto';
 import { RegisterDto } from './dto/register-dto';
@@ -14,6 +13,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { cpfValido, normalizarCpf, normalizarTelefone, telefoneValido } from '../../common/utils/brasil.util';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { hashAuditIdentifier } from '../../common/utils/audit-identifier.util';
 
 @Injectable()
 export class AuthService {
@@ -55,6 +55,7 @@ export class AuthService {
         nome: usuario.nome,
         email: usuario.email,
         role: usuario.role,
+        cargo: usuario.cargo,
       },
     };
   }
@@ -172,7 +173,7 @@ export class AuthService {
 
     const usuario = await this.prisma.usuario.findUnique({
       where: { id: payload.sub },
-      select: { id: true, nome: true, email: true, role: true, ativo: true, tokenVersion: true },
+      select: { id: true, nome: true, email: true, role: true, cargo: true, ativo: true, tokenVersion: true },
     });
     if (!usuario?.ativo || usuario.tokenVersion !== (payload.tokenVersion ?? 0)) {
       return { usuario: null };
@@ -183,6 +184,7 @@ export class AuthService {
         nome: usuario.nome,
         email: usuario.email,
         role: usuario.role,
+        cargo: usuario.cargo,
       },
     };
   }
@@ -232,8 +234,7 @@ export class AuthService {
   }
 
   private hashIdentifier(value: string) {
-    const secret = process.env.AUDIT_IDENTIFIER_SECRET || process.env.JWT_SECRET || 'development-only-audit-key';
-    return createHmac('sha256', secret).update(value).digest('hex');
+    return hashAuditIdentifier(value);
   }
 
   async revokeSessions(usuarioId: string, contexto?: { ip?: string; userAgent?: string; requestId?: string }) {

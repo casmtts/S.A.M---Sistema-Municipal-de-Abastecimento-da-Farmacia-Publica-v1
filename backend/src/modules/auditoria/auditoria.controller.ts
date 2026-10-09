@@ -44,20 +44,36 @@ export class AuditoriaController {
   @Get('integridade')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.visualizar')
-  verificarIntegridade() { return this.service.verificarIntegridade(); }
+  async verificarIntegridade(@Request() req: any) {
+    const resultado = await this.service.verificarIntegridade();
+    await this.service.registrar({ usuarioId: req.user?.id, requestId: req.requestId, acao: 'AUDITORIA_INTEGRIDADE_VERIFICADA', modulo: 'auditoria', recurso: 'LogAuditoria', descricao: 'Integridade da trilha de auditoria verificada', ip: req.ip, userAgent: req.get('user-agent') });
+    return resultado;
+  }
 
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.visualizar')
-  listar(@Query() query: AuditoriaQueryDto) { return this.service.listar(query); }
+  async listar(@Query() query: AuditoriaQueryDto, @Request() req: any) {
+    const resultado = await this.service.listar(query);
+    await this.service.registrar({ usuarioId: req.user?.id, requestId: req.requestId, acao: 'AUDITORIA_CONSULTADA', modulo: 'auditoria', recurso: 'LogAuditoria', descricao: 'Histórico de auditoria consultado', ip: req.ip, userAgent: req.get('user-agent') });
+    return resultado;
+  }
 
   @Get('opcoes')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.visualizar')
-  opcoes() { return this.service.opcoes(); }
+  async opcoes(@Request() req: any) {
+    const resultado = await this.service.opcoes();
+    await this.service.registrar({ usuarioId: req.user?.id, requestId: req.requestId, acao: 'AUDITORIA_FILTROS_CONSULTADOS', modulo: 'auditoria', recurso: 'LogAuditoria', descricao: 'Filtros do histórico de auditoria consultados', ip: req.ip, userAgent: req.get('user-agent') });
+    return resultado;
+  }
 
   @Get(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Permissions('auditoria.visualizar')
-  detalhar(@Param('id', ParseUUIDPipe) id: string) { return this.service.detalhar(id); }
+  async detalhar(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+    const resultado = await this.service.detalhar(id);
+    await this.service.registrar({ usuarioId: req.user?.id, requestId: req.requestId, acao: 'AUDITORIA_REGISTRO_CONSULTADO', modulo: 'auditoria', recurso: 'LogAuditoria', recursoId: id, descricao: 'Registro de auditoria consultado', ip: req.ip, userAgent: req.get('user-agent') });
+    return resultado;
+  }
 }

@@ -46,6 +46,13 @@ export class MedicamentosController {
     return this.medicamentosService.getResumo();
   }
 
+  @Patch(':id/reativar')
+  @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
+  @Permissions('estoque.editar')
+  reativar(@Param('id', ParseUUIDPipe) id: string) {
+    return this.medicamentosService.reativar(id);
+  }
+
   // ========== ROTAS SEM PARÂMETROS ==========
   
   @Get()
@@ -56,8 +63,8 @@ export class MedicamentosController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.FARMACEUTICO)
   @Permissions('estoque.criar')
-  create(@Body() createMedicamentoDto: CreateMedicamentoDto) {
-    return this.medicamentosService.create(createMedicamentoDto);
+  create(@Body() createMedicamentoDto: CreateMedicamentoDto, @Request() req: any) {
+    return this.medicamentosService.create(createMedicamentoDto, req.user.id, req.user.nome || req.user.email);
   }
 
   // ========== ROTAS COM PARÂMETROS ==========
@@ -84,6 +91,8 @@ export class MedicamentosController {
       updateEstoqueDto.tipo,
       req.user.id,
       req.user.nome || req.user.email,
+      updateEstoqueDto.documentoReferencia,
+      updateEstoqueDto.observacao,
     );
   }
 

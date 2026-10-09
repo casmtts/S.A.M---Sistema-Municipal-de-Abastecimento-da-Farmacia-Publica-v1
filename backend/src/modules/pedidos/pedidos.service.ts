@@ -3,8 +3,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreatePedidoDto } from './dto/create-pedido.dto';
 import { UpdatePedidoDto, StatusPedido } from './dto/update-pedido.dto';
 
@@ -49,9 +51,13 @@ export class PedidosService {
       where: { id: createPedidoDto.medicamentoId },
     });
 
-    if (!medicamento) {
+    if (!medicamento || !medicamento.ativo) {
       throw new NotFoundException('Medicamento não encontrado');
     }
+    const hojeUtc = new Date();
+    hojeUtc.setUTCHours(0, 0, 0, 0);
+    if (medicamento.validade < hojeUtc) throw new BadRequestException('Não é possível solicitar um lote vencido.');
+    if (createPedidoDto.dataPrevistaEntrega < hojeUtc) throw new BadRequestException('A previsão de entrega não pode estar no passado.');
 
     const valorTotal =
       medicamento.precoUnitario * createPedidoDto.quantidadeSolicitada;
@@ -60,6 +66,8 @@ export class PedidosService {
       data: {
         medicamentoId: createPedidoDto.medicamentoId,
         medicamentoNome: medicamento.nome,
+        lote: medicamento.lote,
+        validade: medicamento.validade,
         quantidadeSolicitada: createPedidoDto.quantidadeSolicitada,
         quantidadeEntregue: 0,
         dataPrevistaEntrega: createPedidoDto.dataPrevistaEntrega,
@@ -78,21 +86,18 @@ export class PedidosService {
   }
 
   async update(id: string, updatePedidoDto: UpdatePedidoDto) {
-    await this.findOne(id);
-    return this.prisma.pedido.update({
-      where: { id },
-      data: updatePedidoDto,
-      include: {
-        medicamento: true,
-        solicitante: true,
-        aprovador: true,
-      },
-    });
+    const pedido = await this.findOne(id);
+    if (pedido.status !== StatusPedido.PENDENTE) throw new ConflictException('Somente pedidos pendentes podem ter seus dados de solicitação alterados.');
+    return this.prisma.pedido.updateMany({ where: { id, status: StatusPedido.PENDENTE }, data: updatePedidoDto })
+      .then(async (result) => {
+        if (!result.count) throw new ConflictException('O pedido mudou de estado. Atualize os dados e tente novamente.');
+        return this.findOne(id);
+      });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.pedido.delete({ where: { id } });
+    throw new ConflictException('Pedidos são registros administrativos e não podem ser excluídos. Cancele o pedido com justificativa.');
   }
 
   async aprovar(id: string, aprovadorId: string) {
@@ -104,67 +109,64 @@ export class PedidosService {
       );
     }
 
-    return this.prisma.pedido.update({
-      where: { id },
+    const result = await this.prisma.pedido.updateMany({
+      where: { id, status: StatusPedido.PENDENTE },
       data: {
         status: StatusPedido.APROVADO,
         aprovadorId,
       },
-      include: {
-        medicamento: true,
-        solicitante: true,
-        aprovador: true,
-      },
     });
+    if (!result.count) throw new ConflictException('O pedido foi alterado por outra operação; atualize a lista antes de aprovar.');
+    return this.findOne(id);
   }
 
-  async registrarEntrega(id: string, quantidade: number) {
-    const pedido = await this.findOne(id);
-
-    if (
-      pedido.status !== StatusPedido.APROVADO &&
-      pedido.status !== StatusPedido.ENVIADO
-    ) {
-      throw new BadRequestException(
-        `Pedido não pode receber entrega. Status: ${pedido.status}`,
-      );
+  async registrarEntrega(id: string, quantidade: number, responsavelId: string, responsavelNome: string) {
+    if (!Number.isSafeInteger(quantidade) || quantidade <= 0) throw new BadRequestException('A quantidade entregue deve ser um número inteiro positivo.');
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const pedido = await tx.pedido.findUnique({ where: { id } });
+        if (!pedido) throw new NotFoundException(`Pedido com ID ${id} não encontrado`);
+        if (![StatusPedido.APROVADO, StatusPedido.ENVIADO].includes(pedido.status as StatusPedido)) {
+          throw new BadRequestException(`Pedido não pode receber entrega. Status atual: ${pedido.status}`);
+        }
+        const hojeUtc = new Date();
+        hojeUtc.setUTCHours(0, 0, 0, 0);
+        if (pedido.validade && pedido.validade < hojeUtc) throw new ConflictException('O lote vinculado ao pedido está vencido e não pode ser expedido.');
+        const novaQuantidadeEntregue = pedido.quantidadeEntregue + quantidade;
+        if (novaQuantidadeEntregue > pedido.quantidadeSolicitada) throw new BadRequestException('Quantidade entregue excede a solicitada.');
+        const completa = novaQuantidadeEntregue === pedido.quantidadeSolicitada;
+        const alterado = await tx.pedido.updateMany({
+          where: { id, quantidadeEntregue: pedido.quantidadeEntregue, status: pedido.status },
+          data: {
+            quantidadeEntregue: novaQuantidadeEntregue,
+            ...(completa ? { status: StatusPedido.ENTREGUE, dataEntregaReal: new Date() } : {}),
+          },
+        });
+        if (!alterado.count) throw new ConflictException('O pedido mudou durante o registro da entrega. Atualize e tente novamente.');
+        const estoqueAtualizado = await tx.medicamento.updateMany({
+          where: { id: pedido.medicamentoId, quantidadeAtual: { gte: quantidade }, ativo: true },
+          data: { quantidadeAtual: { decrement: quantidade } },
+        });
+        if (!estoqueAtualizado.count) throw new ConflictException('Estoque central insuficiente para concluir esta entrega.');
+        await tx.movimentacao.create({ data: {
+          medicamentoId: pedido.medicamentoId,
+          medicamentoNome: pedido.medicamentoNome,
+          lote: pedido.lote,
+          validade: pedido.validade,
+          tipo: 'SAIDA',
+          quantidade,
+          responsavelId,
+          responsavelNome,
+          documentoReferencia: `Expedição do pedido ${pedido.id}`,
+        } });
+        return tx.pedido.findUniqueOrThrow({ where: { id }, include: { medicamento: true, solicitante: true, aprovador: true } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('A entrega foi concorrida por outra operação. Atualize o pedido e tente novamente.');
+      }
+      throw error;
     }
-
-    const novaQuantidadeEntregue = pedido.quantidadeEntregue + quantidade;
-
-    if (novaQuantidadeEntregue > pedido.quantidadeSolicitada) {
-      throw new BadRequestException('Quantidade entregue excede a solicitada');
-    }
-
-    // Atualizar estoque do medicamento
-    await this.prisma.medicamento.update({
-      where: { id: pedido.medicamentoId },
-      data: {
-        quantidadeAtual: {
-          increment: quantidade,
-        },
-      },
-    });
-
-    // Se for entrega completa
-    if (novaQuantidadeEntregue === pedido.quantidadeSolicitada) {
-      return this.prisma.pedido.update({
-        where: { id },
-        data: {
-          quantidadeEntregue: novaQuantidadeEntregue,
-          status: StatusPedido.ENTREGUE,
-          dataEntregaReal: new Date(),
-        },
-      });
-    }
-
-    // Entrega parcial
-    return this.prisma.pedido.update({
-      where: { id },
-      data: {
-        quantidadeEntregue: novaQuantidadeEntregue,
-      },
-    });
   }
 
   async cancelar(id: string, motivo: string) {
@@ -180,13 +182,15 @@ export class PedidosService {
       throw new BadRequestException('Pedido já está cancelado');
     }
 
-    return this.prisma.pedido.update({
-      where: { id },
+    const result = await this.prisma.pedido.updateMany({
+      where: { id, status: pedido.status },
       data: {
         status: StatusPedido.CANCELADO,
         observacoes: `${pedido.observacoes || ''}\nCancelado: ${motivo}`,
       },
     });
+    if (!result.count) throw new ConflictException('O pedido mudou de estado. Atualize os dados e tente novamente.');
+    return this.findOne(id);
   }
 
   async getPedidosPendentes() {

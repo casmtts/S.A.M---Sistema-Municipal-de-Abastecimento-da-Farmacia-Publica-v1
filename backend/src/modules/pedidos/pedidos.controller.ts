@@ -69,8 +69,9 @@ export class PedidosController {
   registrarEntrega(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('quantidade') quantidade: number,
+    @Request() req: any,
   ) {
-    return this.pedidosService.registrarEntrega(id, quantidade);
+    return this.pedidosService.registrarEntrega(id, quantidade, req.user.id, req.user.nome || req.user.email);
   }
 
   @Patch(':id/cancelar')

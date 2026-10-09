@@ -1,7 +1,7 @@
-import { createHmac } from 'crypto';
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { hashAuditIdentifier } from '../../common/utils/audit-identifier.util';
 import { AuditoriaQueryDto, AuditoriaStatus } from './dto/auditoria-query.dto';
 
 export type AuditoriaEvento = {
@@ -174,8 +174,7 @@ export class AuditoriaService {
   }
 
   private hashAuditValue(value: string) {
-    const secret = process.env.AUDIT_IDENTIFIER_SECRET || process.env.JWT_SECRET || 'development-only-audit-key';
-    return createHmac('sha256', secret).update(value).digest('hex');
+    return hashAuditIdentifier(value);
   }
 
   private sanitize(value: unknown): unknown {

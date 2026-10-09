@@ -174,13 +174,14 @@ model Medicamento {
   principioAtivo    String
   concentracao      String?
   formaFarmaceutica String?
-  codigoBarras      String?  @unique
+  codigoBarras      String?
   lote              String?
   validade          DateTime
   quantidadeAtual   Int      @default(0)
   quantidadeMinima  Int      @default(0)
   quantidadeMaxima  Int      @default(1000)
   precoUnitario     Float    @default(0)
+  ativo             Boolean  @default(true)
   fornecedorId      String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -190,6 +191,7 @@ model Medicamento {
   movimentacoes Movimentacao[]
   pedidos       Pedido[]
 
+  @@unique([codigoBarras, lote])
   @@map("medicamentos")
 }
 
@@ -250,6 +252,8 @@ model Pedido {
   id                   String       @id @default(uuid())
   medicamentoId        String
   medicamentoNome      String
+  lote                 String?
+  validade             DateTime?
   quantidadeSolicitada Int
   quantidadeEntregue   Int          @default(0)
   dataSolicitacao      DateTime     @default(now())
@@ -277,6 +281,8 @@ model Movimentacao {
   id                  String           @id @default(uuid())
   medicamentoId       String
   medicamentoNome     String
+  lote                String?
+  validade            DateTime?
   tipo                TipoMovimentacao
   quantidade          Int
   data                DateTime         @default(now())

@@ -26,7 +26,7 @@ describe('PrivacidadeService', () => {
     expect((tx.usuario as any).update).toBeUndefined();
   });
 
-  it('pseudonimiza o cadastro e nomes operacionais e invalida sessões', async () => {
+  it('pseudonimiza o cadastro sem reescrever registros históricos e invalida sessões', async () => {
     const tx = {
       usuario: {
         findUnique: jest.fn().mockResolvedValue({ id: 'user-1', role: 'ATENDENTE' }),
@@ -36,7 +36,6 @@ describe('PrivacidadeService', () => {
         findFirst: jest.fn().mockResolvedValue({ status: 'CONCLUIDA' }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
-      movimentacao: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
     const prisma = { $transaction: jest.fn((callback) => callback(tx)) };
     const auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
@@ -48,7 +47,7 @@ describe('PrivacidadeService', () => {
       where: { id: 'user-1' },
       data: expect.objectContaining({ ativo: false, tokenVersion: { increment: 1 }, telefone: null, cargo: null }),
     }));
-    expect(tx.movimentacao.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { responsavelId: 'user-1' } }));
+    expect((tx as any).movimentacao).toBeUndefined();
     expect(tx.solicitacaoPrivacidade.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { usuarioId: 'user-1' }, data: { descricao: null, resposta: null } }));
     expect(auditoria.registrar).toHaveBeenCalledWith(expect.objectContaining({ usuarioId: 'admin-1', acao: 'DADOS_PESSOAIS_PSEUDONIMIZADOS' }), tx);
   });

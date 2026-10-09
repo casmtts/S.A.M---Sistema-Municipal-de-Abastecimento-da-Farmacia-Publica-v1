@@ -104,10 +104,9 @@ export class UnidadesSaudeService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
-    
-    // ✅ CORRETO: Usar UnidadeSaude (com U maiúsculo)
-    return this.prisma.unidadeSaude.delete({ where: { id } });
+    const unidade = await this.findOne(id);
+    if (!unidade.ativo) throw new ConflictException('A unidade já está inativada.');
+    return this.prisma.unidadeSaude.update({ where: { id }, data: { ativo: false } });
   }
 
   async getResumo() {
