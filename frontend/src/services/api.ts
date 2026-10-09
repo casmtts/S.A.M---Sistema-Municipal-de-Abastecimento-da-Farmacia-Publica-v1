@@ -27,12 +27,19 @@ export const getApiErrorMessage = (error: unknown, fallback = 'Não foi possíve
   const status = error.response?.status;
   if (!error.response) return 'Não foi possível conectar ao servidor. Tente novamente.';
 
+  const serverMessage = (error.response.data as { message?: unknown } | undefined)?.message;
+  if (status === 409 && typeof serverMessage === 'string' && serverMessage.trim()) {
+    return serverMessage;
+  }
+
   switch (status) {
     case 400:
     case 422:
       return 'Verifique os dados informados e tente novamente.';
     case 401:
-      return 'Não foi possível autenticar ou acessar este recurso.';
+      return error.config?.url?.includes('/auth/login')
+        ? 'E-mail ou senha inválidos, ou cadastro ainda não aprovado.'
+        : 'Sua sessão expirou. Entre novamente para continuar.';
     case 403:
       return 'Você não tem permissão para realizar esta ação.';
     case 404:

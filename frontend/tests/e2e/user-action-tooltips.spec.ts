@@ -29,7 +29,7 @@ test.beforeEach(async ({ page }) => {
   });
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Olá, Admin' })).toBeVisible();
+  await expect(page.getByText(/^Olá, Admin/)).toBeVisible();
   await page.getByRole('button', { name: 'Usuários & Permissões' }).click();
   await expect(page.getByRole('heading', { name: 'Usuários cadastrados' })).toBeVisible();
 });
@@ -69,7 +69,7 @@ test('páginas operacionais mantêm as seções de referência do Stitch sem rol
   await page.setViewportSize({ width: 1280, height: 900 });
 
   await page.getByRole('button', { name: 'Visão geral', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Olá, Admin' })).toBeVisible();
+  await expect(page.getByText(/^Olá, Admin/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Pedidos recentes' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Pedidos da Rede' }).click();

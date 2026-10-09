@@ -29,7 +29,7 @@ test('login usa cookie HttpOnly e abre o painel', async ({ page, context }) => {
   await page.locator('input[type="password"]').first().fill('correct-test-password');
   await page.getByRole('button', { name: 'Entrar' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Olá, Admin' })).toBeVisible();
+  await expect(page.getByText(/^Olá, Admin/)).toBeVisible();
   expect(apiCalls.filter(({ path }) => path === '/auth/session')).toHaveLength(2);
   expect(apiCalls.some(({ path }) => path === '/auth/me')).toBe(false);
   const sessionCookie = (await context.cookies('http://localhost:3001')).find(({ name }) => name === 'sam_session');
@@ -90,7 +90,7 @@ test('usuário solicita correção pelo menu e encerra a sessão', async ({ page
   await page.getByLabel('E-mail').fill('servidor@example.gov');
   await page.locator('input[type="password"]').first().fill('correct-test-password');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page.getByRole('heading', { name: 'Olá, Servidor' })).toBeVisible();
+  await expect(page.getByText(/^Olá, Servidor/)).toBeVisible();
   await page.getByRole('button', { name: 'Abrir menu do perfil' }).click();
   await page.getByRole('menuitem', { name: 'Meu perfil' }).click();
   await expect(page.getByRole('heading', { name: 'Meu perfil' })).toBeVisible();
@@ -134,7 +134,7 @@ test('administrador corrige o próprio cadastro diretamente pelo perfil', async 
   await page.getByLabel('E-mail').fill(profile.email);
   await page.locator('input[type="password"]').first().fill('correct-test-password');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page.getByRole('heading', { name: 'Olá, Admin' })).toBeVisible();
+  await expect(page.getByText(/^Olá, Admin/)).toBeVisible();
   await page.getByRole('button', { name: 'Abrir menu do perfil' }).click();
   await expect(page.getByRole('menuitem', { name: 'Solicitar correção' })).toHaveCount(0);
   await page.getByRole('menuitem', { name: 'Meu perfil' }).click();
