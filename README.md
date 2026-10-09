@@ -82,8 +82,8 @@ O software é uma ferramenta de apoio à operação. A implantação deve ser co
 ### 1. Obtenha o código
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
-cd <DIRETORIO_DO_PROJETO>
+git clone git@github.com:casmtts/sam-sistema-municipal-abastecimento-v2.git
+cd sam-sistema-municipal-abastecimento-v2
 ```
 
 ### 2. Inicie banco e API
