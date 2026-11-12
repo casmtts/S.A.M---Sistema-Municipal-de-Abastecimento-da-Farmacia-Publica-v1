@@ -79,6 +79,14 @@ O software é uma ferramenta de apoio à operação. A implantação deve ser co
 
 ## Instalação e execução
 
+### Atalho: subir tudo com um comando
+
+```bash
+./rodar-local.sh
+```
+
+Sobe banco e API no Docker, cria um administrador local (a senha é exibida no terminal) e inicia o frontend em `http://localhost:3000`.
+
 ### 1. Obtenha o código
 
 ```bash
