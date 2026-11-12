@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Request, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { UserRole } from '../../common/enums/user-role.enum';
@@ -12,6 +13,10 @@ import { PrivacidadeService } from './privacidade.service';
 @UseGuards(RolesGuard)
 export class PrivacidadeController {
   constructor(private readonly service: PrivacidadeService) {}
+
+  @Public()
+  @Get('aviso')
+  aviso() { return this.service.aviso(); }
 
   @Get('minhas')
   minhas(@Request() req: any) { return this.service.minhasSolicitacoes(req.user.id); }

@@ -28,3 +28,11 @@ Não abra issue pública. Use o recurso **Security → Report a vulnerability** 
 
 ## Antes de operar com dados reais
 Defina segredos fortes e únicos (`JWT_SECRET`, `AUDIT_IDENTIFIER_SECRET`), HTTPS, `TRUST_PROXY` correto atrás do proxy, backups, retenção, gestão de incidentes e base legal (LGPD). Rode `npm audit` no backend e no frontend a cada atualização.
+
+## Privacidade e LGPD (adicionado em 2026-11)
+
+- CPF é mascarado em exportações; planilhas neutralizam injeção de fórmulas (`backend/src/common/utils/privacy.util.ts`).
+- Pedidos de titulares têm prazo de 15 dias com sinalização de atraso; dados sob guarda legal não são apagados.
+- Incidentes envolvendo dados pessoais: siga [docs/lgpd/05-plano-de-incidentes.md](docs/lgpd/05-plano-de-incidentes.md) (comunicação à ANPD e aos titulares em até 3 dias úteis).
+- Pacote completo: [docs/lgpd/](docs/lgpd/README.md).
+

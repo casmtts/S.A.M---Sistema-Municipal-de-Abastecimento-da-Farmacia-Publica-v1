@@ -1,40 +1,46 @@
+const TZ = 'America/Sao_Paulo';
+
 export const formatadores = {
-  // Formatar data para DD/MM/YYYY
+  // Formatar data para DD/MM/YYYY (fuso Brasília)
   data: (data: Date | string): string => {
     const d = new Date(data);
-    return d.toLocaleDateString('pt-BR');
+    return d.toLocaleDateString('pt-BR', { timeZone: TZ });
   },
 
-  // Formatar data e hora
+  // Formatar data e hora (fuso Brasília)
   dataHora: (data: Date | string): string => {
     const d = new Date(data);
-    return d.toLocaleString('pt-BR');
+    return d.toLocaleString('pt-BR', { timeZone: TZ });
   },
 
-  // Formatar hora
+  // Formatar hora (fuso Brasília)
   hora: (data: Date | string): string => {
     const d = new Date(data);
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
   },
 
-  // Data para nome de arquivo
+  // Data para nome de arquivo (fuso Brasília)
   dataArquivo: (): string => {
-    const hoje = new Date();
-    return `${hoje.getDate().toString().padStart(2, '0')}-${(hoje.getMonth() + 1).toString().padStart(2, '0')}-${hoje.getFullYear()}`;
+    const agora = new Date();
+    const partes = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }).formatToParts(agora);
+    const get = (t: string) => partes.find(p => p.type === t)?.value ?? '00';
+    return `${get('day')}-${get('month')}-${get('year')}`;
   },
 
-  // Hora para nome de arquivo
+  // Hora para nome de arquivo (fuso Brasília)
   horaArquivo: (): string => {
-    const hoje = new Date();
-    return `${hoje.getHours().toString().padStart(2, '0')}-${hoje.getMinutes().toString().padStart(2, '0')}`;
+    const agora = new Date();
+    const partes = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ, hour12: false }).formatToParts(agora);
+    const get = (t: string) => partes.find(p => p.type === t)?.value ?? '00';
+    return `${get('hour')}-${get('minute')}`;
   },
 
-  // Obter data e hora atual formatada
+  // Obter data e hora atual formatada (fuso Brasília)
   getDataHoraAtual: (): { data: string; hora: string } => {
     const agora = new Date();
     return {
-      data: agora.toLocaleDateString('pt-BR'),
-      hora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      data: agora.toLocaleDateString('pt-BR', { timeZone: TZ }),
+      hora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ }),
     };
   },
 

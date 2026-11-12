@@ -15,6 +15,8 @@ Plataforma web para apoiar a gestão do abastecimento de medicamentos na rede mu
 - [Principais endpoints](#principais-endpoints)
 - [Testes](#testes)
 - [Segurança e privacidade](#segurança-e-privacidade)
+- [Conformidade LGPD](#conformidade-lgpd)
+- [Branches e fluxo de entrega](#branches-e-fluxo-de-entrega)
 - [Contribuição](#contribuição)
 - [Licença](#licença)
 
@@ -239,13 +241,39 @@ Os testes Playwright podem exigir os serviços e contas de teste configurados em
 
 Veja a [política de segurança](SECURITY.md), os [controles de operação e segurança do backend](backend/README.md) e a [documentação do módulo de privacidade](backend/src/modules/privacidade/README.md).
 
+## Conformidade LGPD
+
+O S.A.M. trata hoje dados de **servidores** (nome, e-mail, CPF, telefone, cargo) e logística de medicamentos; **não trata dados de pacientes**. O município é o controlador e baseia o tratamento em obrigação legal e execução de políticas públicas (LGPD, arts. 7º, II e III, e 23), não em consentimento.
+
+O que o sistema já faz:
+
+- **Aviso de privacidade** na tela de acesso e no menu do perfil, com contato do encarregado (`GET /privacidade/aviso`; configure `CONTROLADOR_NOME`, `ENCARREGADO_NOME`, `ENCARREGADO_EMAIL`).
+- **Direitos do titular**: acesso, correção e eliminação com protocolo, prazo de resposta de 15 dias (`venceEm`/`atrasada`) e resposta fundamentada; dados sob guarda legal não são apagados, apenas pseudonimizados quando cabível.
+- **Minimização**: CPF mascarado nas exportações; trilha de auditoria com IP em hash e dados pessoais mascarados.
+- **Exportações seguras**: neutralização de injeção de fórmulas em planilhas.
+- **Segurança**: sessão por cookie HttpOnly com rotação a cada 10 minutos, bloqueio de tentativas, CSP, RBAC no backend, CodeQL e varredura de segredos.
+
+O que depende da prefeitura (modelos prontos em [`docs/lgpd/`](docs/lgpd/README.md)): ato de designação do encarregado, registro de operações, RIPD, política de retenção, plano de incidentes (comunicação à ANPD em 3 dias úteis), termo de uso e cláusulas para operadores. O [roadmap](docs/lgpd/09-roadmap.md) lista MFA, criptografia de coluna, backups testados e integração BNAFAR.
+
+> Material técnico de apoio; **não substitui parecer jurídico** nem garante conformidade por si só.
+
+## Branches e fluxo de entrega
+
+| Branch | Papel | Ambiente | Quem recebe merge |
+|---|---|---|---|
+| `dev` | Integração contínua do desenvolvimento | Desenvolvimento (dados fictícios) | Branches `feat/*`, `fix/*`, `docs/*` via PR |
+| `homolog` | Validação (testes, revisão de segurança/LGPD, aceite) | Homologação (dados anonimizados) | Somente `dev` |
+| `main` | Código liberado, sempre implantável | Produção | Somente `homolog` |
+
+Fluxo: `feat/x` → PR → `dev` → PR → `homolog` → PR → `main` (com tag de versão). Correções urgentes: `hotfix/*` a partir de `main`, com merge também em `homolog` e `dev`. Detalhes e proteções recomendadas em [docs/processo/BRANCHING.md](docs/processo/BRANCHING.md).
+
 ## Design
 
 A interface segue a identidade "azul-medicamento" (marinho profundo, acento ciano, cápsulas de status, Manrope). Veja [DESIGN.md](DESIGN.md).
 
 ## Contribuição
 
-1. Crie uma branch a partir da branch de trabalho acordada.
+1. Crie uma branch (`feat/…`, `fix/…`, `docs/…`) a partir de `dev` e abra o PR para `dev` (veja [Branches e fluxo de entrega](#branches-e-fluxo-de-entrega)).
 2. Faça alterações pequenas e mantenha ou amplie a cobertura de testes.
 3. Execute build e testes relevantes antes de abrir um pull request.
 4. Use mensagens de commit claras, preferencialmente no padrão Conventional Commits em português.

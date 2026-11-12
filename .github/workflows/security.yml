@@ -2,9 +2,9 @@ name: Segurança e qualidade
 
 on:
   push:
-    branches: [main, showcase]
+    branches: [main, homolog, dev, showcase]
   pull_request:
-    branches: [main]
+    branches: [main, homolog, dev]
 
 permissions:
   contents: read
