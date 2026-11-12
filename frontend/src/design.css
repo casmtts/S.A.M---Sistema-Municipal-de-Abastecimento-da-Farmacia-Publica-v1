@@ -386,3 +386,16 @@ img, svg, canvas { max-width: 100%; }
 }
 @media (min-width: 561px) { .content .metric h4 { font-size: clamp(22px, 2vw, 34px); white-space: nowrap; } }
 @media (max-width: 340px) { .content .metric h4 { font-size: clamp(15px, 4.9vw, 21px); } }
+
+/* Chips e textos dentro da faixa azul do cabeçalho precisam de contraste (ex.: "0 pendentes"). */
+.page-header .MuiChip-root { position: relative; z-index: 1; font-weight: 700; }
+.page-header .MuiChip-outlined, .page-header .MuiChip-colorDefault { color: #ffffff !important; border-color: rgba(255,255,255,.55) !important; background: rgba(255,255,255,.10) !important; }
+.page-header .MuiChip-filled.MuiChip-colorWarning { background: var(--amber) !important; color: #2b1a00 !important; border-color: transparent !important; }
+.page-header .MuiChip-filled.MuiChip-colorSuccess { background: var(--mint) !important; color: #04281c !important; }
+.page-header .MuiChip-filled.MuiChip-colorError { background: var(--red) !important; color: #fff !important; }
+.page-header .MuiChip-label { color: inherit; }
+.page-header .MuiTypography-root:not(h4):not(.eyebrow) { color: #b9cbe6; }
+.page-header .MuiInputBase-root, .page-header .MuiSelect-icon { color: #fff; }
+.page-header .MuiOutlinedInput-notchedOutline { border-color: rgba(255,255,255,.4) !important; }
+.page-header .MuiInputLabel-root { color: #b9cbe6 !important; }
+.page-header .MuiButton-text { color: #fff !important; }
