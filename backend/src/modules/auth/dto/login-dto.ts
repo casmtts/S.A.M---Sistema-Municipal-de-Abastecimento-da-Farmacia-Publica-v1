@@ -6,6 +6,6 @@ export class LoginDto {
   email: string;
 
   @IsString()
-  @MaxLength(128)
+  @MaxLength(72)
   senha: string;
 }

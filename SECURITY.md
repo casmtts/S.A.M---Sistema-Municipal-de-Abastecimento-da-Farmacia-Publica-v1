@@ -12,6 +12,13 @@ Não abra issue pública. Use o recurso **Security → Report a vulnerability** 
 - Auditoria com hashes encadeados e verificação de integridade.
 - Validação de variáveis de ambiente na inicialização; segredos fracos são recusados em produção.
 
+## Sessão e autenticação
+- Cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` em produção) com **rotação do token a cada 10 minutos** em requisições autenticadas, vida máxima absoluta de 8 h e revogação imediata por `tokenVersion`.
+- Autorização (papel, permissões, conta ativa) reavaliada no banco a cada requisição, não confiada ao conteúdo do token.
+- JWT com algoritmo fixado (HS256); senhas de 10 a 72 caracteres com bcrypt (custo 12); nova senha deve diferir da atual.
+- Login com limite por IP, bloqueio por conta e resposta de tempo uniforme para contas inexistentes; cadastro público não devolve dados da conta.
+- Admin não pode desativar ou remover a própria conta; ativação/desativação valida o corpo com DTO booleano.
+
 ## Endurecimento aplicado nesta revisão
 - Contêiner do backend roda como usuário não-root e tem `HEALTHCHECK`.
 - Banco de desenvolvimento publicado apenas em `127.0.0.1`.

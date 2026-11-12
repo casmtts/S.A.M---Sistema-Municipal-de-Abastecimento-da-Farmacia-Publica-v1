@@ -18,6 +18,7 @@ import { UserRole } from '../../common/enums/user-role.enum';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
+import { ToggleStatusDto } from '../../common/dto/toggle-status.dto';
 
 @Controller('usuarios')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -54,7 +55,7 @@ export class UsuariosController {
   @Patch(':id/toggle')
   @Roles(UserRole.ADMIN)
   @Permissions('usuarios.aprovar')
-  toggleStatus(@Param('id', ParseUUIDPipe) id: string, @Body('ativo') ativo: boolean, @Request() req: any) {
+  toggleStatus(@Param('id', ParseUUIDPipe) id: string, @Body() { ativo }: ToggleStatusDto, @Request() req: any) {
     return this.usuariosService.toggleStatus(id, ativo, req.user.id, req.requestId);
   }
 

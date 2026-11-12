@@ -7,6 +7,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { clearSessionCookie, setSessionCookie } from '../../common/utils/session-cookie.util';
 
 @Controller('auth')
 export class AuthController {
@@ -77,24 +78,10 @@ export class AuthController {
   }
 
   private setSessionCookie(response: Response, token: string) {
-    response.cookie('sam_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: this.sessionMaxAge(),
-    });
-  }
-
-  private sessionMaxAge() {
-    const configured = process.env.JWT_EXPIRES_IN || '15m';
-    const match = /^(\d+)(s|m|h|d)$/.exec(configured);
-    if (!match) return 15 * 60 * 1000;
-    const units: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
-    return Math.min(Number(match[1]) * units[match[2]], 24 * 60 * 60 * 1000);
+    setSessionCookie(response, token);
   }
 
   private clearSessionCookie(response: Response) {
-    response.clearCookie('sam_session', { path: '/', sameSite: 'strict', secure: process.env.NODE_ENV === 'production' });
+    clearSessionCookie(response);
   }
 }

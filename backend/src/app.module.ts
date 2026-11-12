@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor';
 import { PrivacidadeModule } from './modules/privacidade/privacidade.module';
+import { SessionRotationInterceptor } from './common/interceptors/session-rotation.interceptor';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -63,6 +64,10 @@ import { validateEnv } from './config/env.validation';
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SessionRotationInterceptor,
     },
   ],
 })

@@ -18,7 +18,7 @@ describe('JwtStrategy', () => {
     };
     const strategy = new JwtStrategy(config as any, prisma as any);
 
-    await expect(strategy.validate({ sub: 'usuario-1', tokenVersion: 3 })).resolves.toEqual({
+    await expect(strategy.validate({ sub: 'usuario-1', tokenVersion: 3, iat: Math.floor(Date.now() / 1000), authAt: Math.floor(Date.now() / 1000) })).resolves.toMatchObject({
       id: 'usuario-1',
       email: 'usuario@exemplo.com',
       role: 'ADMIN',
@@ -39,6 +39,16 @@ describe('JwtStrategy', () => {
     };
     const strategy = new JwtStrategy(config as any, prisma as any);
 
-    await expect(strategy.validate({ sub: 'usuario-1', tokenVersion: 2 })).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(strategy.validate({ sub: 'usuario-1', tokenVersion: 2, iat: Math.floor(Date.now() / 1000), authAt: Math.floor(Date.now() / 1000) })).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejeita sessão que passou da vida máxima absoluta, mesmo com token recém-rotacionado', async () => {
+    const prisma = { usuario: { findUnique: jest.fn() } };
+    const strategy = new JwtStrategy(config as any, prisma as any);
+    const agora = Math.floor(Date.now() / 1000);
+
+    await expect(strategy.validate({ sub: 'usuario-1', tokenVersion: 0, iat: agora, authAt: agora - 9 * 3600 }))
+      .rejects.toBeInstanceOf(UnauthorizedException);
+    expect(prisma.usuario.findUnique).not.toHaveBeenCalled();
   });
 });

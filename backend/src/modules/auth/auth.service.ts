@@ -1,5 +1,7 @@
 import {
   Injectable,
+  HttpException,
+  HttpStatus,
   UnauthorizedException,
   ConflictException,
   BadRequestException,
@@ -15,8 +17,17 @@ import { cpfValido, normalizarCpf, normalizarTelefone, telefoneValido } from '..
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { hashAuditIdentifier } from '../../common/utils/audit-identifier.util';
 
+// Hash fixo usado para igualar o tempo de resposta quando o e-mail não existe,
+// evitando enumeração de contas por diferença de tempo.
+const DUMMY_BCRYPT_HASH = bcrypt.hashSync('sam-dummy-password-for-timing', 12);
+const LOCKOUT_MAX_FAILURES = 5;
+const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
+
 @Injectable()
 export class AuthService {
+  // Bloqueio por conta (além do limite por IP): vale por instância da API.
+  private readonly failedLogins = new Map<string, { count: number; first: number; lockedUntil: number }>();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -26,22 +37,27 @@ export class AuthService {
   async login(loginDto: LoginDto, contexto?: { ip?: string; userAgent?: string; requestId?: string }) {
     const { email, senha } = loginDto;
     const emailNormalizado = email.trim().toLowerCase();
+    this.assertNotLocked(emailNormalizado);
 
     const usuario = await this.prisma.usuario.findUnique({
       where: { email: emailNormalizado },
     });
 
     if (!usuario) {
+      await bcrypt.compare(senha, DUMMY_BCRYPT_HASH);
+      this.registerFailure(emailNormalizado);
       await this.auditoria.registrar({ acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Tentativa de login inválida', dadosDepois: { emailHash: this.hashIdentifier(emailNormalizado) }, ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId, sucesso: false });
       throw new UnauthorizedException('Não foi possível autenticar.');
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!usuario.ativo || !senhaValida) {
+      this.registerFailure(emailNormalizado);
       await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'LOGIN_FALHA', modulo: 'auth', descricao: 'Credenciais inválidas ou acesso pendente', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId, sucesso: false });
       throw new UnauthorizedException('Não foi possível autenticar.');
     }
 
+    this.failedLogins.delete(emailNormalizado);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.usuario.update({ where: { id: usuario.id }, data: { ultimoAcesso: new Date() } });
@@ -49,7 +65,7 @@ export class AuthService {
     });
 
     return {
-      access_token: this.jwtService.sign({ sub: usuario.id, email: usuario.email, role: usuario.role, tokenVersion: usuario.tokenVersion }),
+      access_token: this.assinarSessao(usuario),
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
@@ -58,6 +74,27 @@ export class AuthService {
         cargo: usuario.cargo,
       },
     };
+  }
+
+  private assertNotLocked(email: string) {
+    const entry = this.failedLogins.get(email);
+    if (entry && entry.lockedUntil > Date.now()) {
+      throw new HttpException('Muitas tentativas. Tente novamente mais tarde.', HttpStatus.TOO_MANY_REQUESTS);
+    }
+  }
+
+  private registerFailure(email: string) {
+    const now = Date.now();
+    const entry = this.failedLogins.get(email);
+    if (!entry || now - entry.first > LOCKOUT_WINDOW_MS) {
+      this.failedLogins.set(email, { count: 1, first: now, lockedUntil: 0 });
+    } else {
+      entry.count += 1;
+      if (entry.count >= LOCKOUT_MAX_FAILURES) entry.lockedUntil = now + LOCKOUT_WINDOW_MS;
+    }
+    if (this.failedLogins.size > 10_000) {
+      for (const [key, value] of this.failedLogins) if (now - value.first > LOCKOUT_WINDOW_MS) this.failedLogins.delete(key);
+    }
   }
 
   async register(registerDto: RegisterDto, contexto?: { ip?: string; userAgent?: string; requestId?: string }) {
@@ -97,7 +134,8 @@ export class AuthService {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { senha, tokenVersion, ...result } = usuario;
       await this.auditoria.registrar({ usuarioId: usuario.id, acao: 'CADASTRO_SOLICITADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: usuario.id, descricao: 'Cadastro público enviado para aprovação', ip: contexto?.ip, userAgent: contexto?.userAgent, requestId: contexto?.requestId }, tx);
-      return { ...result, message: 'Cadastro recebido. Aguarde a aprovação do administrador.' };
+      void result;
+      return { message: 'Cadastro recebido. Aguarde a aprovação do administrador.' };
     });
   }
 
@@ -165,7 +203,7 @@ export class AuthService {
 
     let payload: { sub?: string; tokenVersion?: number };
     try {
-      payload = await this.jwtService.verifyAsync(token);
+      payload = await this.jwtService.verifyAsync(token, { algorithms: ['HS256'] });
     } catch {
       return { usuario: null };
     }
@@ -209,6 +247,10 @@ export class AuthService {
     const senhaValida = await bcrypt.compare(dto.senhaAtual, usuario.senha);
     if (!senhaValida) throw new UnauthorizedException('Não foi possível autenticar.');
 
+    if (await bcrypt.compare(dto.novaSenha, usuario.senha)) {
+      throw new BadRequestException('A nova senha deve ser diferente da atual.');
+    }
+
     const senha = await bcrypt.hash(dto.novaSenha, 12);
     const atualizado = await this.prisma.$transaction(async (tx) => {
       const result = await tx.usuario.update({
@@ -229,8 +271,22 @@ export class AuthService {
     });
     return {
       message: 'Senha alterada com sucesso. Faça login novamente nos demais dispositivos.',
-      access_token: this.jwtService.sign({ sub: atualizado.id, email: atualizado.email, role: atualizado.role, tokenVersion: atualizado.tokenVersion }),
+      access_token: this.assinarSessao(atualizado),
     };
+  }
+
+  /**
+   * Assina o token de sessão. `authAt` marca o instante do login original e é
+   * preservado nas rotações, para que a sessão tenha uma vida máxima absoluta.
+   */
+  assinarSessao(usuario: { id?: string; sub?: string; email: string; role: string; tokenVersion: number }, authAt?: number) {
+    return this.jwtService.sign({
+      sub: usuario.id ?? usuario.sub,
+      email: usuario.email,
+      role: usuario.role,
+      tokenVersion: usuario.tokenVersion,
+      authAt: authAt ?? Math.floor(Date.now() / 1000),
+    });
   }
 
   private hashIdentifier(value: string) {
