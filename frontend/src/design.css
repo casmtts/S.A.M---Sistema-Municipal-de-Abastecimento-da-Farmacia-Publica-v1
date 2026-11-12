@@ -149,7 +149,7 @@ tbody tr:last-child td { border-bottom: 0; }
 /* ---------- Acesso ---------- */
 .login { background: var(--navy-950) var(--dots); padding: clamp(16px, 4vw, 48px); }
 .login-card { border: 1px solid #1a3a6b !important; border-radius: 20px !important; box-shadow: 0 30px 80px rgba(0,0,0,.45) !important; background: var(--card); }
-.login-copy { background: linear-gradient(160deg, var(--navy-800), var(--navy-950)) var(--dots); color: #e6efff; }
+.login-copy { background: var(--dots), linear-gradient(160deg, var(--navy-800), var(--navy-950)); color: #e6efff; }
 .login-copy::after { content: ''; position: absolute; right: -90px; bottom: -90px; left: auto; top: auto; width: 280px; height: 280px; border-radius: 140px; border: 0; background: radial-gradient(circle, rgba(61,213,243,.3), transparent 68%); box-shadow: none; }
 .login-copy h3 { color: #fff; font-family: var(--sans); font-weight: 800; letter-spacing: -.035em; font-size: clamp(30px, 3vw, 42px); line-height: 1.08; margin: 40px 0 14px; }
 .login-copy > .MuiTypography-body1, .login-intro { color: #b9cbe6 !important; }
@@ -165,3 +165,224 @@ tbody tr:last-child td { border-bottom: 0; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media (max-width: 720px) { .page-header { padding: 18px; border-radius: 12px; } }
+
+/* =====================================================================
+   Sistema de cards (indicadores): todas as telas usam o mesmo componente.
+   Cápsula de estado no topo, rótulo em mono, valor grande, brilho suave
+   na cor do estado. A cor vem de --accent.
+   ===================================================================== */
+.metric, .stock-stat, .order-stat, .catalog-stat, .report-kpi, .permission-exception-stat, .user-overview > * {
+  --accent: var(--blue);
+  position: relative; display: grid; align-content: start; gap: 6px;
+  padding: 18px 20px 16px; min-height: 132px; overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid var(--line) !important; border-radius: 16px !important;
+  box-shadow: 0 1px 2px rgba(11,36,71,.05), 0 10px 28px -12px rgba(11,36,71,.14) !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.metric::after, .stock-stat::after, .order-stat::after, .catalog-stat::after, .report-kpi::after, .permission-exception-stat::after, .user-overview > *::after {
+  content: ''; position: absolute; right: -36px; top: -36px; width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%); pointer-events: none;
+}
+.stock-stat::before, .order-stat::before, .catalog-stat::before, .report-kpi::before, .permission-exception-stat::before, .user-overview > *::before {
+  content: ''; display: block; width: 30px; height: 11px; border-radius: 999px; margin-bottom: 8px;
+  background: linear-gradient(90deg, var(--accent) 0 50%, color-mix(in srgb, var(--accent) 30%, #fff) 50% 100%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.metric::before { display: none; }
+.stock-stat > span, .order-stat > span, .catalog-stat > span, .report-kpi > span, .permission-exception-stat > span, .user-overview > * > span:first-child {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+}
+.stock-stat > strong, .order-stat > strong, .catalog-stat > strong, .report-kpi > strong, .permission-exception-stat > strong, .user-overview > * > strong {
+  font-family: var(--sans); font-size: 34px; line-height: 1.05; font-weight: 800; letter-spacing: -.04em; color: var(--navy-900); font-variant-numeric: tabular-nums;
+}
+.stock-stat > small, .order-stat > small, .catalog-stat > small, .report-kpi > small, .permission-exception-stat > small, .user-overview > * > small {
+  font-size: 12px; line-height: 1.4; color: var(--muted);
+}
+.stock-stat-critical, .order-stat-critical, .report-kpi-danger, .permission-exception-deny { --accent: var(--red); }
+.stock-stat-warning, .order-stat-warning, .catalog-stat-attention, .metric-warning { --accent: var(--amber); }
+.metric-positive, .permission-exception-allow { --accent: var(--mint); }
+.stock-stat-critical > strong, .report-kpi-danger > strong, .permission-exception-deny > strong { color: #c0262c; }
+.stock-stat-warning > strong, .order-stat-warning > strong, .catalog-stat-attention > strong { color: #a8680a; }
+.metric-clickable:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)) !important; box-shadow: 0 2px 4px rgba(11,36,71,.06), 0 18px 36px -14px rgba(11,36,71,.25) !important; }
+.metric .metric-icon { position: absolute; top: 14px; right: 14px; margin: 0; z-index: 1; }
+.metric h4 { position: relative; z-index: 1; }
+
+/* Painéis: folha limpa, título com divisor sutil */
+.panel { border-radius: 16px !important; padding: 22px 24px; box-shadow: 0 1px 2px rgba(11,36,71,.05), 0 10px 28px -14px rgba(11,36,71,.12) !important; }
+.panel-title { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line-soft); align-items: center; }
+.catalog-support-card, .orders-support-card, .role-matrix-card { background: linear-gradient(180deg, #f7faff, #fff) !important; }
+.catalog-note { border-left: 0; border-radius: 12px; background: #eef5ff; border: 1px solid #d3e3fb; }
+.catalog-note .MuiTypography-root:first-child { color: var(--navy-800); font-weight: 700; }
+
+/* Linhas de lista dentro de painéis */
+.alert-row, .permission-row, .role-row, .top-moved-row, .user-approval-row { border-radius: 10px; }
+.alert-row:hover, .top-moved-row:hover { background: #f5f9ff; }
+.top-moved-row { padding-inline: 8px; }
+
+.stock-overview, .order-overview, .metric-grid, .report-kpi-grid, .catalog-overview, .user-overview { gap: 16px; }
+@media (max-width: 560px) { .stock-stat > strong, .order-stat > strong, .catalog-stat > strong, .report-kpi > strong, .metric h4 { font-size: 28px; } }
+
+/* =====================================================================
+   Responsivo: 1120 → 950 (drawer) → 560 (celular) → 380 → 340.
+   Cards de indicador ficam sempre em 2 colunas no celular (até 320 px).
+   ===================================================================== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.app-shell { overflow-x: clip; }
+.login { min-height: 100vh; min-height: 100dvh; }
+.workspace { min-width: 0; }
+img, svg, canvas { max-width: 100%; }
+
+@media (max-width: 1120px) {
+  .page-header { padding: 22px 24px; }
+}
+@media (max-width: 950px) {
+  .topbar { gap: 10px; }
+  .global-search { flex: 1 1 auto; min-width: 0; }
+  .content { padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+  .login { padding: 16px; align-items: start; }
+  .login-card { margin: 0 auto; }
+  .dashboard-grid, .report-grid { gap: 14px; }
+}
+@media (max-width: 560px) {
+  .topbar { padding: 8px 12px; min-height: 60px; }
+  .topbar-status { display: none; }
+  .topbar h6 { font-size: 14px; }
+  .page-header { padding: 18px 16px; border-radius: 14px; gap: 14px; margin-bottom: 14px; }
+  .page-header h4 { font-size: 24px; }
+  .page-header::after { width: 120px; height: 120px; right: -30px; top: -30px; }
+  .page-header .MuiButton-root, .page-header > :last-child { width: 100%; }
+
+  .stock-overview, .order-overview, .user-overview, .metric-grid, .report-kpi-grid, .catalog-overview, .catalog-overview-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; margin-bottom: 12px;
+  }
+  .metric, .stock-stat, .order-stat, .catalog-stat, .report-kpi, .permission-exception-stat, .user-overview > * {
+    padding: 14px 14px 12px; min-height: 100px; gap: 3px; border-radius: 14px !important;
+  }
+  .stock-stat::before, .order-stat::before, .catalog-stat::before, .report-kpi::before, .permission-exception-stat::before, .user-overview > *::before {
+    width: 24px; height: 9px; margin-bottom: 5px;
+  }
+  .metric::after, .stock-stat::after, .order-stat::after, .catalog-stat::after, .report-kpi::after, .permission-exception-stat::after, .user-overview > *::after { width: 80px; height: 80px; right: -26px; top: -26px; }
+  .stock-stat > span, .order-stat > span, .catalog-stat > span, .report-kpi > span, .permission-exception-stat > span, .user-overview > * > span:first-child { font-size: 9.5px; letter-spacing: .05em; overflow-wrap: anywhere; }
+  .stock-stat > strong, .order-stat > strong, .catalog-stat > strong, .report-kpi > strong, .permission-exception-stat > strong, .user-overview > * > strong, .metric h4 { font-size: 26px; overflow-wrap: anywhere; }
+  .stock-stat > small, .order-stat > small, .catalog-stat > small, .report-kpi > small, .permission-exception-stat > small, .user-overview > * > small, .metric-change { font-size: 11px; line-height: 1.35; }
+  .metric .metric-icon { width: 28px; height: 28px; top: 12px; right: 12px; }
+
+  .panel { padding: 16px 14px; border-radius: 14px !important; margin-bottom: 12px; }
+  .panel-title { flex-wrap: wrap; gap: 8px; padding-bottom: 10px; margin-bottom: 10px; }
+  .panel-title .MuiTypography-h6, .panel > .MuiTypography-h6 { font-size: 15px; }
+  .toolbar { gap: 8px; }
+  .toolbar > .MuiFormControl-root, .toolbar .global-search, .stock-filters > *, .catalog-filters > *, .user-filters > * { flex: 1 1 100%; min-width: 0; }
+  th { padding: 9px 10px; font-size: 9.5px; }
+  td { padding: 10px; font-size: 12px; }
+  table { min-width: 560px; }
+  .tabs { margin-inline: -2px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button, .MuiButton-root, .MuiIconButton-root { min-height: 44px; }
+  .MuiIconButton-root { min-width: 44px; }
+  .chip { height: 26px; }
+  .MuiDialog-paper { margin: 12px !important; width: calc(100% - 24px) !important; max-height: calc(100dvh - 24px) !important; border-radius: 14px !important; }
+  .notification-menu, .profile-menu { max-width: calc(100vw - 24px); }
+  .dashboard-stock-heading { gap: 8px; }
+
+  .login { padding: 10px; }
+  .login-card { box-shadow: 0 16px 40px rgba(0,0,0,.4) !important; border-radius: 16px !important; }
+  .login-copy { padding: 24px 20px; }
+  .login-copy h3 { font-size: 28px; margin: 26px 0 10px; }
+  .login-copy .sam-full-logo { width: 190px; }
+  .login-points { gap: 12px; }
+  .login-form { padding: 24px 20px; }
+}
+@media (max-width: 380px) {
+  .stock-overview, .order-overview, .user-overview, .metric-grid, .report-kpi-grid, .catalog-overview, .catalog-overview-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important;
+  }
+  .content { padding: 14px 10px 30px; }
+  .page-header { padding: 16px 14px; }
+  .page-header h4 { font-size: 22px; }
+  .metric, .stock-stat, .order-stat, .catalog-stat, .report-kpi, .permission-exception-stat, .user-overview > * { padding: 12px 12px 10px; min-height: 92px; }
+  .stock-stat > strong, .order-stat > strong, .catalog-stat > strong, .report-kpi > strong, .permission-exception-stat > strong, .user-overview > * > strong, .metric h4 { font-size: 23px; }
+  .stock-stat > span, .order-stat > span, .catalog-stat > span, .report-kpi > span, .permission-exception-stat > span, .user-overview > * > span:first-child { font-size: 9px; letter-spacing: .03em; }
+  .stock-stat > small, .order-stat > small, .catalog-stat > small, .report-kpi > small, .permission-exception-stat > small, .user-overview > * > small, .metric-change { font-size: 10.5px; }
+  .panel { padding: 14px 12px; }
+  .login-copy { padding: 22px 16px; }
+  .login-copy h3 { font-size: 25px; }
+  .login-form { padding: 22px 16px; }
+  .login-kicker { font-size: 9px !important; letter-spacing: .1em !important; }
+}
+@media (max-width: 340px) {
+  .page-header h4 { font-size: 20px; }
+  .stock-stat > strong, .order-stat > strong, .catalog-stat > strong, .report-kpi > strong, .permission-exception-stat > strong, .user-overview > * > strong, .metric h4 { font-size: 21px; }
+  .login-copy .sam-full-logo { width: 160px; }
+  .login-copy h3 { font-size: 23px; }
+}
+@media (min-width: 561px) and (max-width: 950px) {
+  .stock-overview, .order-overview, .user-overview, .report-kpi-grid, .catalog-overview-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (hover: none) { .metric-clickable:hover { transform: none; } }
+.login-copy { overflow: hidden; }
+/* Valores longos (ex.: R$ 48.210,50) nunca quebram no meio: a fonte encolhe com a largura. */
+@media (max-width: 560px) {
+  .metric h4 { font-size: clamp(16px, 5vw, 26px); white-space: nowrap; overflow-wrap: normal; letter-spacing: -.04em; }
+  .metric > .MuiTypography-body2 { margin-right: 34px; min-height: 0; }
+}
+
+/* Reforço de especificidade: o App.css fixa tamanhos com `.content ...`; aqui o design novo prevalece. */
+.content .metric h4,
+.content .stock-stat > strong,
+.content .order-stat > strong,
+.content .catalog-stat > strong,
+.content .report-kpi > strong { font-size: 34px; line-height: 1.05; letter-spacing: -.04em; }
+.content .stock-stat > span,
+.content .order-stat > span,
+.content .catalog-stat > span,
+.content .report-kpi > span { font-size: 10.5px !important; line-height: 1.3; }
+.content .metric-change,
+.content .stock-stat > small,
+.content .order-stat > small,
+.content .catalog-stat > small,
+.content .report-kpi > small { font-size: 12px; line-height: 1.4; }
+@media (max-width: 560px) {
+  .content .metric h4,
+.content .stock-stat > strong,
+.content .order-stat > strong,
+.content .catalog-stat > strong,
+.content .report-kpi > strong { font-size: 26px; }
+  .content .metric h4 { font-size: clamp(16px, 5vw, 26px); white-space: nowrap; }
+  .content .stock-stat > span,
+.content .order-stat > span,
+.content .catalog-stat > span,
+.content .report-kpi > span { font-size: 9.5px !important; }
+  .content .metric-change,
+.content .stock-stat > small,
+.content .order-stat > small,
+.content .catalog-stat > small,
+.content .report-kpi > small { font-size: 11px; }
+}
+@media (max-width: 380px) {
+  .content .metric h4,
+.content .stock-stat > strong,
+.content .order-stat > strong,
+.content .catalog-stat > strong,
+.content .report-kpi > strong { font-size: 23px; }
+  .content .metric h4 { font-size: clamp(16px, 5vw, 23px); }
+  .content .stock-stat > span,
+.content .order-stat > span,
+.content .catalog-stat > span,
+.content .report-kpi > span { font-size: 9px !important; }
+  .content .metric-change,
+.content .stock-stat > small,
+.content .order-stat > small,
+.content .catalog-stat > small,
+.content .report-kpi > small { font-size: 10.5px; }
+}
+@media (max-width: 340px) {
+  .content .metric h4,
+.content .stock-stat > strong,
+.content .order-stat > strong,
+.content .catalog-stat > strong,
+.content .report-kpi > strong { font-size: 21px; }
+}
+@media (min-width: 561px) { .content .metric h4 { font-size: clamp(22px, 2vw, 34px); white-space: nowrap; } }
+@media (max-width: 340px) { .content .metric h4 { font-size: clamp(15px, 4.9vw, 21px); } }

@@ -6,6 +6,7 @@
 - Novo logotipo (cápsula + wordmark) e novo favicon; textos da tela de acesso reescritos sem alegações não verificáveis.
 - Fontes Manrope e JetBrains Mono via Google Fonts; CSP do `vercel.json` ajustada para permitir apenas esses dois hosts (antes as fontes eram bloqueadas).
 - `DESIGN.md` reescrito.
+- Responsividade para 320–1280 px (cards em 2 colunas no celular, alvos de toque de 44 px, sem rolagem horizontal); cards de indicador unificados (estoque, pedidos, cadastros, relatórios, usuários).
 ### Segurança e infraestrutura
 - Backend em contêiner não-root com healthcheck.
 - Banco de desenvolvimento limitado a `127.0.0.1`.
