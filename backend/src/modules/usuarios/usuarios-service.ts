@@ -156,6 +156,7 @@ export class UsuariosService {
   }
 
   async toggleStatus(id: string, ativo: boolean, atorId?: string, requestId?: string) {
+    if (atorId && atorId === id && !ativo) throw new BadRequestException('Você não pode desativar a própria conta.');
     const currentUser = await this.findOne(id);
     if (currentUser.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN não pode ser desativado.');
 
@@ -171,6 +172,7 @@ export class UsuariosService {
   }
 
   async remove(id: string, atorId?: string, requestId?: string) {
+    if (atorId && atorId === id) throw new BadRequestException('Você não pode remover a própria conta.');
     const currentUser = await this.findOne(id);
     if (currentUser.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN não pode ser removido.');
     return this.prisma.$transaction(async (tx) => {

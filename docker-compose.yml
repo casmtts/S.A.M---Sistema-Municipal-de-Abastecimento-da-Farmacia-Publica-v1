@@ -26,6 +26,8 @@ services:
       AUDIT_IDENTIFIER_SECRET: ${AUDIT_IDENTIFIER_SECRET:-local-only-audit-secret-change-me-32chars}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      SESSION_ROTATE_SECONDS: ${SESSION_ROTATE_SECONDS:-600}
+      SESSION_ABSOLUTE_MAX_SECONDS: ${SESSION_ABSOLUTE_MAX_SECONDS:-28800}
       PORT: 3001
       NODE_ENV: ${NODE_ENV:-development}
     ports:

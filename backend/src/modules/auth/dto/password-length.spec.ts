@@ -4,34 +4,34 @@ import { RegisterDto } from './register-dto';
 import { CreateUsuarioDto } from '../../usuarios/dto/create-usuario.dto';
 
 describe('comprimento mínimo da senha', () => {
-  it('aceita seis caracteres e rejeita cinco no cadastro público', async () => {
+  it('aceita dez caracteres e rejeita nove no cadastro público', async () => {
     const base = { nome: 'Pessoa de Teste', email: 'pessoa@example.gov', cpf: '52998224725' };
-    const tooShort = Object.assign(new RegisterDto(), base, { senha: '12345' });
-    const minimum = Object.assign(new RegisterDto(), base, { senha: '123456' });
+    const tooShort = Object.assign(new RegisterDto(), base, { senha: '123456789' });
+    const minimum = Object.assign(new RegisterDto(), base, { senha: '1234567890' });
 
     expect((await validate(tooShort)).some(error => error.property === 'senha')).toBe(true);
     expect(await validate(minimum)).toHaveLength(0);
   });
 
-  it('aceita seis caracteres e rejeita cinco ao criar usuários pela administração', async () => {
+  it('aceita dez caracteres e rejeita nove ao criar usuários pela administração', async () => {
     const base = { nome: 'Pessoa de Teste', email: 'pessoa@example.gov', cpf: '52998224725' };
-    const tooShort = Object.assign(new CreateUsuarioDto(), base, { senha: '12345' });
-    const minimum = Object.assign(new CreateUsuarioDto(), base, { senha: '123456' });
+    const tooShort = Object.assign(new CreateUsuarioDto(), base, { senha: '123456789' });
+    const minimum = Object.assign(new CreateUsuarioDto(), base, { senha: '1234567890' });
 
     expect((await validate(tooShort)).some(error => error.property === 'senha')).toBe(true);
     expect(await validate(minimum)).toHaveLength(0);
   });
 
-  it('aplica o mínimo a senha atual, nova e confirmação na troca de senha', async () => {
+  it('aplica o mínimo à nova senha e à confirmação (a senha atual só tem teto, pois contas antigas podem ter senhas curtas)', async () => {
     const tooShort = Object.assign(new ChangePasswordDto(), {
-      senhaAtual: '12345', novaSenha: '12345', confirmarSenha: '12345',
+      senhaAtual: '123456789', novaSenha: '123456789', confirmarSenha: '123456789',
     });
     const minimum = Object.assign(new ChangePasswordDto(), {
-      senhaAtual: '123456', novaSenha: '123456', confirmarSenha: '123456',
+      senhaAtual: '1234567890', novaSenha: '1234567890', confirmarSenha: '1234567890',
     });
 
     expect((await validate(tooShort)).map(error => error.property).sort()).toEqual([
-      'confirmarSenha', 'novaSenha', 'senhaAtual',
+      'confirmarSenha', 'novaSenha',
     ]);
     expect(await validate(minimum)).toHaveLength(0);
   });
