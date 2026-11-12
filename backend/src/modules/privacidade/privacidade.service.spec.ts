@@ -51,4 +51,24 @@ describe('PrivacidadeService', () => {
     expect(tx.solicitacaoPrivacidade.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { usuarioId: 'user-1' }, data: { descricao: null, resposta: null } }));
     expect(auditoria.registrar).toHaveBeenCalledWith(expect.objectContaining({ usuarioId: 'admin-1', acao: 'DADOS_PESSOAIS_PSEUDONIMIZADOS' }), tx);
   });
+
+  it('calcula o prazo de 15 dias e marca pedidos abertos vencidos como atrasados', async () => {
+    const antigo = new Date(Date.now() - 20 * 86_400_000);
+    const prisma = { solicitacaoPrivacidade: { findMany: jest.fn().mockResolvedValue([
+      { id: 'a', status: 'PENDENTE', createdAt: antigo },
+      { id: 'b', status: 'CONCLUIDA', createdAt: antigo },
+    ]) } };
+    const service = new PrivacidadeService(prisma as any, { registrar: jest.fn() } as any);
+    const [aberta, concluida] = await service.minhasSolicitacoes('user-1');
+    expect(aberta.atrasada).toBe(true);
+    expect(concluida.atrasada).toBe(false);
+    expect(aberta.venceEm.getTime() - antigo.getTime()).toBe(15 * 86_400_000);
+  });
+
+  it('expõe o aviso público com controlador e encarregado', () => {
+    const service = new PrivacidadeService({} as any, {} as any);
+    const aviso = service.aviso();
+    expect(aviso.prazoRespostaDias).toBe(15);
+    expect(aviso.encarregado).toHaveProperty('email');
+  });
 });

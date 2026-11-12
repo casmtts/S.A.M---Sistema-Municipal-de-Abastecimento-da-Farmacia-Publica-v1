@@ -176,9 +176,28 @@ export class UsuariosService {
     const currentUser = await this.findOne(id);
     if (currentUser.role === 'SUPER_ADMIN') throw new BadRequestException('O SUPER_ADMIN não pode ser removido.');
     return this.prisma.$transaction(async (tx) => {
-      const usuario = await tx.usuario.update({ where: { id }, data: { ativo: false, tokenVersion: { increment: 1 } }, select: { id: true, nome: true, email: true, role: true, ativo: true, updatedAt: true } });
-      await this.auditoria.registrar({ usuarioId: atorId, requestId, acao: 'USUARIO_DESATIVADO', modulo: 'usuarios', recurso: 'Usuario', recursoId: id, descricao: 'Acesso encerrado pelo administrador; histórico preservado', dadosAntes: { ativo: currentUser.ativo }, dadosDepois: { ativo: usuario.ativo } }, tx);
-      return usuario;
+      // Libera o e-mail para reuso por outro cadastro, preservando o original
+      // no campo `observacao` da auditoria e sufixando o endereço com
+      // #inativo-<timestamp> (campo email continua único e auditável).
+      const emailOriginal = currentUser.email;
+      const emailLiberado = `${emailOriginal}#inativo-${Date.now()}`;
+      const usuario = await tx.usuario.update({
+        where: { id },
+        data: { ativo: false, tokenVersion: { increment: 1 }, email: emailLiberado },
+        select: { id: true, nome: true, email: true, role: true, ativo: true, updatedAt: true },
+      });
+      await this.auditoria.registrar({
+        usuarioId: atorId,
+        requestId,
+        acao: 'USUARIO_DESATIVADO',
+        modulo: 'usuarios',
+        recurso: 'Usuario',
+        recursoId: id,
+        descricao: 'Conta inativada; e-mail liberado para reuso. Histórico de auditoria preservado.',
+        dadosAntes: { ativo: currentUser.ativo, email: emailOriginal },
+        dadosDepois: { ativo: usuario.ativo, emailLiberado },
+      }, tx);
+      return { ...usuario, emailOriginal };
     });
   }
 }

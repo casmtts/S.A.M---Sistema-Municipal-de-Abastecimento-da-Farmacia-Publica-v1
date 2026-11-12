@@ -1,5 +1,13 @@
 # Changelog
 
+## [Conformidade 2026-11] — LGPD e governança
+- Aviso de privacidade público (login e menu do perfil) com contato do encarregado; endpoint `GET /privacidade/aviso`.
+- Pedidos de titulares com prazo de 15 dias (`venceEm`, `atrasada`); menu do perfil com solicitação de acesso e eliminação.
+- Minimização: CPF mascarado em exportações; neutralização de injeção de fórmulas em Excel.
+- Política de retenção de referência em código (`retention.policy.ts`) e testes.
+- Pacote `docs/lgpd/` (ato do encarregado, ROPA, RIPD, retenção, incidentes, termo de uso, cláusulas de operador, checklist, roadmap).
+- Estrutura de branches `dev` → `homolog` → `main`, CI estendido, modelo de PR e `docs/processo/BRANCHING.md`.
+
 ## [Revisão 2026-11] — design e segurança
 ### Design
 - Nova identidade "azul-medicamento": chrome marinho com textura de cartela blister, conteúdo claro, acento ciano, status em cápsula, dashboards com indicadores e gráficos redesenhados.

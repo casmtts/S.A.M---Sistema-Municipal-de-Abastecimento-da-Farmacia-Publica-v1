@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { maskCpf, neutralizeFormula } from '../../common/utils/privacy.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as ExcelJS from 'exceljs';
 import { formatadores } from '../../common/utils/formatadores.util';
@@ -443,7 +444,7 @@ export class RelatoriosService {
       const dados = usuarios.map(u => ({
         Nome: u.nome,
         Email: u.email,
-        CPF: formatadores.cpf(u.cpf),
+        CPF: maskCpf(u.cpf), // minimização: CPF mascarado em exportações
         Perfil: this.getRoleLabel(u.role),
         Cargo: u.cargo || '-',
         Status: u.ativo ? '✅ Ativo' : '❌ Inativo',
@@ -497,7 +498,7 @@ export class RelatoriosService {
       headerRow.height = 25;
 
       dados.forEach((item, index) => {
-        const row = worksheet.addRow(colunas.map(c => item[c.key] || '-'));
+        const row = worksheet.addRow(colunas.map(c => neutralizeFormula(item[c.key] || '-')));
         row.alignment = { vertical: 'middle' };
         row.height = 20;
 

@@ -2,14 +2,36 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { CreatePrivacyRequestDto } from './dto/create-privacy-request.dto';
+import { prazoRespostaTitular } from '../../common/utils/retention.policy';
 import { ResolvePrivacyRequestDto } from './dto/resolve-privacy-request.dto';
 
 @Injectable()
 export class PrivacidadeService {
   constructor(private readonly prisma: PrismaService, private readonly auditoria: AuditoriaService) {}
 
-  minhasSolicitacoes(usuarioId: string) {
-    return this.prisma.solicitacaoPrivacidade.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' } });
+  private comPrazo<T extends { createdAt: Date; status: string }>(pedido: T) {
+    const venceEm = prazoRespostaTitular(pedido.createdAt);
+    const aberta = !['CONCLUIDA', 'RECUSADA'].includes(pedido.status);
+    return { ...pedido, venceEm, atrasada: aberta && venceEm.getTime() < Date.now() };
+  }
+
+  /** Dados públicos do aviso de privacidade (art. 23, I e Res. CD/ANPD 18/2024, art. 9º). */
+  aviso() {
+    return {
+      controlador: process.env.CONTROLADOR_NOME || 'Prefeitura Municipal — Secretaria de Saúde',
+      encarregado: {
+        nome: process.env.ENCARREGADO_NOME || 'Encarregado(a) pelo tratamento de dados pessoais',
+        email: process.env.ENCARREGADO_EMAIL || null,
+      },
+      versao: '1.0',
+      atualizadoEm: '2026-11-12',
+      prazoRespostaDias: 15,
+    };
+  }
+
+  async minhasSolicitacoes(usuarioId: string) {
+    const pedidos = await this.prisma.solicitacaoPrivacidade.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' } });
+    return pedidos.map((p) => this.comPrazo(p));
   }
 
   async solicitar(usuarioId: string, dto: CreatePrivacyRequestDto, requestId?: string) {
@@ -20,8 +42,9 @@ export class PrivacidadeService {
     });
   }
 
-  listar() {
-    return this.prisma.solicitacaoPrivacidade.findMany({ orderBy: { createdAt: 'asc' }, include: { usuario: { select: { id: true, nome: true, email: true } } } });
+  async listar() {
+    const pedidos = await this.prisma.solicitacaoPrivacidade.findMany({ orderBy: { createdAt: 'asc' }, include: { usuario: { select: { id: true, nome: true, email: true } } } });
+    return pedidos.map((p) => this.comPrazo(p));
   }
 
   async atender(id: string, dto: ResolvePrivacyRequestDto, atendidaPor: string, requestId?: string) {
