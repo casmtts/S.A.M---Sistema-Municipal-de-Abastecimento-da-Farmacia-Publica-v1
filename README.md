@@ -82,8 +82,8 @@ O software é uma ferramenta de apoio à operação. A implantação deve ser co
 ### 1. Obtenha o código
 
 ```bash
-git clone git@github.com:casmtts/sam-sistema-municipal-abastecimento-v2.git
-cd sam-sistema-municipal-abastecimento-v2
+git clone https://github.com/casmtts/S.A.M---Sistema-Municipal-de-Abastecimento-da-Farmacia-Publica-v1.git
+cd S.A.M---Sistema-Municipal-de-Abastecimento-da-Farmacia-Publica-v1
 ```
 
 ### 2. Inicie banco e API
@@ -229,7 +229,11 @@ Os testes Playwright podem exigir os serviços e contas de teste configurados em
 - O fluxo de privacidade permite solicitações de acesso, correção e eliminação/pseudonimização conforme análise administrativa.
 - A proteção técnica do código não constitui, por si só, certificação ou garantia de conformidade legal. Antes de operar com dados reais, o município deve definir base legal e finalidade, papéis de controlador/operador, aviso de privacidade, retenção documental, segurança de infraestrutura, backups, gestão de incidentes e responsabilidades.
 
-Veja [controles de operação e segurança do backend](backend/README.md) e a [documentação do módulo de privacidade](backend/src/modules/privacidade/README.md).
+Veja a [política de segurança](SECURITY.md), os [controles de operação e segurança do backend](backend/README.md) e a [documentação do módulo de privacidade](backend/src/modules/privacidade/README.md).
+
+## Design
+
+A interface segue a identidade "livro de registro" (papel, tinta verde-escura, carimbo vermelho, tipografia de livro). Veja [DESIGN.md](DESIGN.md).
 
 ## Contribuição
 

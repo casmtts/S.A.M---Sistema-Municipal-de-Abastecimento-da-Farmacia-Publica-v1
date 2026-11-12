@@ -4,7 +4,7 @@
   "description": "Backend do Sistema de Abastecimento de Medicamentos",
   "repository": {
     "type": "git",
-    "url": "https://github.com/seu-usuario/farmacia-municipal"
+    "url": "https://github.com/casmtts/S.A.M---Sistema-Municipal-de-Abastecimento-da-Farmacia-Publica-v1"
   },
   "scripts": {
     "build": "nest build",

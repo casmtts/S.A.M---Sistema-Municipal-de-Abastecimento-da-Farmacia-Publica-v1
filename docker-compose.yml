@@ -8,7 +8,7 @@ services:
     volumes:
       - sam-postgres-data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_HOST_PORT:-5433}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -23,6 +23,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-sam}:${POSTGRES_PASSWORD:-sam_docker_password}@db:5432/${POSTGRES_DB:-farmacia_municipal}
       JWT_SECRET: ${JWT_SECRET:-local-only-development-secret-change-me-32chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      AUDIT_IDENTIFIER_SECRET: ${AUDIT_IDENTIFIER_SECRET:-local-only-audit-secret-change-me-32chars}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
       PORT: 3001
