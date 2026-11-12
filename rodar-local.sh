@@ -15,7 +15,7 @@ docker compose up --build -d
 echo "[2/4] Aguardando a API em http://localhost:3001 ..."
 ok=""
 for _ in $(seq 1 60); do
-  if curl -fsS http://localhost:3001/health >/dev/null 2>&1; then ok=1; break; fi
+  if curl -fsS http://localhost:3001/health/check >/dev/null 2>&1; then ok=1; break; fi
   sleep 2
 done
 [ -n "$ok" ] || { echo "A API não respondeu em 2 min. Veja: docker compose logs backend"; exit 1; }
