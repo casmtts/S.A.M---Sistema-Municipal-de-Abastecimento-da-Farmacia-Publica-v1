@@ -16,6 +16,7 @@ Não abra issue pública. Use o recurso **Security → Report a vulnerability** 
 - Contêiner do backend roda como usuário não-root e tem `HEALTHCHECK`.
 - Banco de desenvolvimento publicado apenas em `127.0.0.1`.
 - `docker-compose.prod.yml` exige `AUDIT_IDENTIFIER_SECRET` (antes o backend não subia em produção).
+- CSP do frontend limitada a `fonts.googleapis.com` e `fonts.gstatic.com` para fontes.
 - Dependabot e workflow de segurança já configurados em `.github/`.
 
 ## Antes de operar com dados reais

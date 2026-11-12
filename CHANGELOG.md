@@ -2,9 +2,9 @@
 
 ## [Revisão 2026-11] — design e segurança
 ### Design
-- Nova identidade "livro de registro": paleta de papel e tinta, vermelho de carimbo, tipografia serifada e monoespaçada do sistema, tabelas e painéis de linhas finas.
-- Novo logotipo tipográfico e novo favicon; textos da tela de acesso reescritos sem alegações não verificáveis.
-- Removida a dependência do Google Fonts (bloqueada pela CSP do deploy).
+- Nova identidade "azul-medicamento": chrome marinho com textura de cartela blister, conteúdo claro, acento ciano, status em cápsula, dashboards com indicadores e gráficos redesenhados.
+- Novo logotipo (cápsula + wordmark) e novo favicon; textos da tela de acesso reescritos sem alegações não verificáveis.
+- Fontes Manrope e JetBrains Mono via Google Fonts; CSP do `vercel.json` ajustada para permitir apenas esses dois hosts (antes as fontes eram bloqueadas).
 - `DESIGN.md` reescrito.
 ### Segurança e infraestrutura
 - Backend em contêiner não-root com healthcheck.

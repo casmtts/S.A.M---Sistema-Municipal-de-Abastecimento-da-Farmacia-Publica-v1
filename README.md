@@ -233,7 +233,7 @@ Veja a [política de segurança](SECURITY.md), os [controles de operação e seg
 
 ## Design
 
-A interface segue a identidade "livro de registro" (papel, tinta verde-escura, carimbo vermelho, tipografia de livro). Veja [DESIGN.md](DESIGN.md).
+A interface segue a identidade "azul-medicamento" (marinho profundo, acento ciano, cápsulas de status, Manrope). Veja [DESIGN.md](DESIGN.md).
 
 ## Contribuição
 

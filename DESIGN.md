@@ -1,42 +1,34 @@
-# Design: S.A.M. — "livro de registro"
+# Design: S.A.M. — "azul-medicamento"
 
 ## Ideia
-A farmácia pública trabalha com papel, carimbo e assinatura: livro de entrada e saída, receituário, etiqueta de lote. A interface parte dessa linguagem. Ela é tipográfica e de linhas finas, sem sombras suaves, sem gradientes e sem cantos arredondados. A confiança vem da legibilidade e da ordem, não de brilho.
+Interface de saúde pública que parece instrumento de trabalho, não site institucional. O chrome (navegação, cabeçalho de página, acesso) é azul-marinho profundo; o conteúdo fica em cinza-azulado claro para tabelas e gráficos densos. Dois motivos de farmácia: a **cápsula** (logotipo, status) e a **cartela blister** (textura de pontos nas faixas azuis).
 
 ## Paleta (tokens em `frontend/src/design.css`)
-| Papel | Token | Valor |
-| --- | --- | --- |
-| Fundo (papel) | `--paper` | `#F3EEE3` |
-| Folha (painéis) | `--sheet` | `#FBF8F1` |
-| Tinta | `--ink` | `#1D2420` |
-| Régua | `--rule` | `#CFC6B2` |
-| Verde-floresta (ação, navegação) | `--forest` | `#1B3A2D` |
-| Verde de estado "regular" | `--forest-2` | `#2F6B4F` |
-| Vermelho de carimbo (crítico, foco, seleção) | `--stamp` | `#B8321F` |
-| Ocre (atenção) | `--ochre` | `#A96B12` |
-| Azul-denim (informativo) | `--denim` | `#2F5D7C` |
-
-O vermelho é o único acento. Ele aparece em seleção de navegação, foco, estados críticos e gráfico de saídas. Contraste de texto principal sobre fundo: acima de 12:1.
+| Papel | Valor |
+| --- | --- |
+| Marinho 950 / 900 / 800 | `#07162B` / `#0B2447` / `#0F3060` |
+| Azul de ação | `#1D5FD1` |
+| Ciano de soro (acento, foco, seleção) | `#3DD5F3` |
+| Verde regular | `#2FBF8F` |
+| Âmbar atenção | `#E9A23B` |
+| Vermelho crítico | `#E5484D` |
+| Fundo / cartão / linha | `#EEF3F9` / `#FFFFFF` / `#D8E2EE` |
+| Texto / secundário | `#0B1B33` / `#55687F` |
 
 ## Tipografia
-Fontes do sistema, sem download (a CSP do deploy só permite `font-src 'self'`).
-- **Títulos e números grandes:** serifa de livro (`Iowan Old Style`, `Palatino`, `Georgia`).
-- **Interface:** `Avenir Next` / `Segoe UI` / `system-ui`.
-- **Rótulos, lotes, cabeçalhos de tabela, carimbos:** monoespaçada do sistema, caixa-alta, espaçamento aberto.
-Algarismos tabulares em todo o sistema.
+- **Manrope** (interface e títulos, pesos 400–800) e **JetBrains Mono** (lotes, rótulos, números de tabela), carregadas do Google Fonts. A CSP de `frontend/vercel.json` libera `fonts.googleapis.com` e `fonts.gstatic.com`. Sem rede, cai para `Avenir Next` / `Segoe UI` / `system-ui` e `ui-monospace`.
+- Algarismos tabulares em todo o sistema; indicadores grandes em Manrope 800.
 
 ## Componentes
-- **Navegação:** faixa verde-escura com filete duplo vermelho embaixo; item ativo sublinhado em vermelho. Logotipo tipográfico "S.A.M." com filete vertical vermelho.
-- **Painéis e indicadores:** folha com borda fina e régua superior de 2 px; números em serifa grande; sem ícones decorativos em caixas.
-- **Status:** carimbos retangulares com contorno, texto em caixa-alta monoespaçada. O estado crítico tem leve inclinação. Cor nunca é o único sinal: o texto sempre diz o estado.
-- **Tabelas:** régua superior e inferior, cabeçalho com filete duplo, linhas com divisor fino e destaque ao passar o mouse.
-- **Diálogos e menus:** borda de tinta, régua vermelha no topo e sombra dura deslocada (sem desfoque).
-- **Acesso:** capa de livro; painel verde com pautas e margem vermelha, formulário na folha.
+- **Navegação:** faixa marinho com cartela; item ativo em cápsula ciano translúcida.
+- **Cabeçalho de página:** faixa marinho arredondada com brilho ciano, título em branco e ação principal em ciano.
+- **Dashboards:** indicadores em cartões brancos com barra lateral de estado (azul, âmbar, verde); barras de nível em gradiente; gráficos Recharts em azul e verde, tooltip marinho.
+- **Status:** cápsulas tintadas com ponto de cor e texto (nunca só cor).
+- **Tabelas:** cabeçalho cinza-azulado em caixa-alta, linhas com realce azul claro ao passar o mouse, valores em monoespaçada.
+- **Acesso:** painel marinho com cartela e brilho ciano; formulário em cartão branco.
 
 ## Regras
-- Raio de borda 0 (MUI `shape.borderRadius` = 2 apenas onde o componente exige).
-- Sem sombras com desfoque, gradientes, brilhos, roxo, ou ícones em caixas coloridas.
-- Alvos de toque de pelo menos 44 px; foco sempre visível (2 px vermelho).
-- Respeitar `prefers-reduced-motion`.
-- Não inventar números, integrações, certificações ou alegações de conformidade. Textos de marketing da tela de acesso descrevem apenas o que o sistema faz.
+- Foco sempre visível (2 px ciano), alvos de toque de 44 px, `prefers-reduced-motion` respeitado.
+- Contraste: texto sobre marinho e sobre branco acima de 7:1.
+- Não inventar números, integrações, certificações ou alegações de conformidade.
 - Sem rolagem horizontal da página; tabelas rolam no próprio quadro.
